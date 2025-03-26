@@ -22,6 +22,6 @@ val make_board : unit -> t
 val current_turn : t -> turn
 (**Returns which color's turn it currently is*)
 
-val get_piece : int * int -> Piece.t option
+val get_piece : t -> int * int -> Piece.t option
 (**[get_piece (file, rank)] returns [Some piece] if there is a piece present at
    (file, rank). Otherwise, return [None]*)
