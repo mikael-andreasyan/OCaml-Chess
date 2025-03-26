@@ -22,7 +22,8 @@ val valid_pattern : int * int -> int * int -> t -> bool
    blocking the path or a piece not being able to move because it would put the
    king in check.). Note: The [file] is the letter associated with the column
    that the piece is on. For this function, the numbers 1-8 represent the
-   letters a-h. *)
+   letters a-h. Requires: [file_st, rank_st] and [file_end, rank_end] are valid
+   positions on a chess board**)
 
 val get_color : t -> color
 (**[get_color piece] returns the color of the piece*)

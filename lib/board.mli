@@ -13,7 +13,8 @@ val make_move : t -> int * int -> int * int -> bool
    the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
    illegal, then the function returns false and makes no changes to the board.
    Otherwise, it mutates the current board to represent the move, changes board
-   state, and advances the turn.*)
+   state, and advances the turn. Requires: [file_st, rank_st] and
+   [file_end, rank_end] are valid positions on a chess board*)
 
 val make_board : unit -> t
 (**Creates a fresh instance of the board*)
