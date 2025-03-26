@@ -1,6 +1,0 @@
-# dune init project chess
-# OCAMLPARAM: unset
-# Shared cache: enabled-except-user-rules
-# Shared cache location: /home/mikael/.cache/dune/db
-# Workspace root: /home/mikael/le-critters-3110/chess
-# Auto-detected concurrency: 12
