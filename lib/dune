@@ -1,3 +1,2 @@
 (library
- (name chess)
- (modules_without_implementation board))
+ (name chess))
