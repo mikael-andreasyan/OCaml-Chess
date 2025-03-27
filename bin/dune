@@ -1,4 +1,4 @@
 (executable
  (public_name chess)
  (name main)
- (libraries chess))
+ (libraries chess ANSITerminal str))
