@@ -1,14 +1,22 @@
-type turn =
-  | White
-  | Black
-
 type t = {
-  board : Piece.t option array array;
-  curr_turn : turn;
+  mutable board : Piece.t option array array;
+  mutable curr_turn : Piece.color;
 }
 (**AF: the board is represented by option Piece.t array array*)
 
-let make_move board (file_st, rank_st) (file_end, rank_end) = true
+let make_move board (file_st, rank_st) (file_end, rank_end) =
+  let piece = board.board.(rank_st).(file_st) in
+  match piece with
+  | Some piece ->
+      if Piece.valid_pattern (file_st, rank_st) (file_end, rank_end) piece then (
+        board.board.(rank_end).(file_end) <- Some piece;
+        board.board.(rank_st).(file_st) <- None;
+        (match board.curr_turn with
+        | White -> board.curr_turn <- Black
+        | Black -> board.curr_turn <- White);
+        true)
+      else false
+  | None -> false
 
 let setup array =
   array.(7).(0) <- Some Piece.(make_piece Black Rook);
