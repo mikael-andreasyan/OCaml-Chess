@@ -66,11 +66,11 @@ let get_rank rank =
 let print_board board =
   (let curr_player = Board.current_turn board in
    match curr_player with
-   | Board.White ->
+   | Piece.White ->
        ANSITerminal.print_string
          [ ANSITerminal.white; ANSITerminal.on_black ]
          "WHITE'S TURN"
-   | Board.Black ->
+   | Piece.Black ->
        ANSITerminal.print_string
          [ ANSITerminal.white; ANSITerminal.on_black ]
          "BLACK'S TURN");
@@ -102,17 +102,40 @@ let print_board board =
   print_newline ()
 
 (**Takes in a string representing chess notation*)
-let process_input input board =
+let rec process_start input board =
   let file = get_file input.[0] in
   let rank = get_rank input.[1] in
   match Board.get_piece board (file, rank) with
-  | Some _ -> print_endline "THERE IS A PIECE HERE"
-  | None -> print_endline "THERE IS NO PIECE"
+  | Some piece ->
+      if Piece.get_color piece = Board.current_turn board then input
+      else (
+        print_endline
+          "This piece is not a piece you can move because it is not the same \
+           color as the current player. Try another piece";
+        process_start (get_input ()) board)
+  | None ->
+      print_endline "There is no piece here. Try again";
+      get_input ()
+
+let rec process_input p_start p_end board =
+  let start_file = get_file p_start.[0] in
+  let start_rank = get_rank p_start.[1] in
+  let end_file = get_file p_end.[0] in
+  let end_rank = get_rank p_end.[1] in
+  Board.make_move board (start_file, start_rank) (end_file, end_rank)
 
 let rec loop board =
-  process_input (get_input ()) board;
+  print_board board;
+  print_endline "Pick a piece to move";
+  let start = get_input () in
+  let start = process_start start board in
+  print_endline "where do you want to move this piece";
+  let p_end = get_input () in
+  if process_input start p_end board then ()
+  else
+    print_endline
+      "sorry but the piece you chose can't move like that\n\
+       It's still the same player's turn, please try again";
   loop board
 
-let () =
-  print_board board;
-  loop board
+let () = loop board
