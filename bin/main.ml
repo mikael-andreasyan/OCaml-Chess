@@ -64,16 +64,6 @@ let get_rank rank =
   | _ -> raise (Sys_error "something went wrong")
 
 let print_board board =
-  (let curr_player = Board.current_turn board in
-   match curr_player with
-   | Piece.White ->
-       ANSITerminal.print_string
-         [ ANSITerminal.white; ANSITerminal.on_black ]
-         "WHITE'S TURN"
-   | Piece.Black ->
-       ANSITerminal.print_string
-         [ ANSITerminal.white; ANSITerminal.on_black ]
-         "BLACK'S TURN");
   print_newline ();
   for r = 7 downto 0 do
     ANSITerminal.print_string
@@ -115,7 +105,7 @@ let rec process_start input board =
         process_start (get_input ()) board)
   | None ->
       print_endline "There is no piece here. Try again";
-      get_input ()
+      process_start (get_input ()) board
 
 let rec process_input p_start p_end board =
   let start_file = get_file p_start.[0] in
@@ -126,15 +116,21 @@ let rec process_input p_start p_end board =
 
 let rec loop board =
   print_board board;
+  (let curr_player = Board.current_turn board in
+   match curr_player with
+   | Piece.White -> print_endline "WHITE'S TURN"
+   | Piece.Black -> print_endline "BLACK'S TURN");
   print_endline "Pick a piece to move";
   let start = get_input () in
   let start = process_start start board in
-  print_endline "where do you want to move this piece";
+  print_endline "Where do you want to move this piece?";
   let p_end = get_input () in
   if process_input start p_end board then ()
   else
     print_endline
-      "sorry but the piece you chose can't move like that\n\
+      "Sorry but the piece you chose can't move like that. You either chose an \
+       invalid movement patten, your move was blocked by another piece, or you \
+       tried to eat a piece of your own color\n\
        It's still the same player's turn, please try again";
   loop board
 

@@ -21,8 +21,14 @@ let valid_pattern (file_st, rank_st) (file_end, rank_end) piece =
   match piece.piece with
   | Pawn -> (
       match piece.color with
-      | White -> rank_diff = 1 || (rank_st = 1 && rank_diff = 2)
-      | Black -> rank_diff = -1 || (rank_st = 6 && rank_diff = -2))
+      | White ->
+          (rank_diff = 1 && file_diff = 0)
+          || ((rank_st = 1 && rank_diff = 2) && file_diff = 0)
+          || Int.abs rank_diff = Int.abs file_diff
+      | Black ->
+          (rank_diff = -1 && file_diff = 0)
+          || ((rank_st = 6 && rank_diff = -2) && file_diff = 0)
+          || Int.abs rank_diff = Int.abs file_diff)
   | Knight ->
       (Int.abs rank_diff = 2 && Int.abs file_diff = 1)
       || (Int.abs rank_diff = 1 && Int.abs file_diff = 2)
