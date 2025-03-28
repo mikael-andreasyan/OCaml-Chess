@@ -4,11 +4,71 @@ type t = {
 }
 (**AF: the board is represented by option Piece.t array array*)
 
+(**returns if the piece tried to move to a tile with the same color on it*)
+let same_color board piece (file_end, rank_end) =
+  match board.board.(rank_end).(file_end) with
+  | None -> false
+  | Some other_piece -> Piece.get_color piece = Piece.get_color other_piece
+
+let piece_exists board rank file =
+  match board.board.(rank).(file) with
+  | Some _ -> true
+  | None -> false
+
+(**Since the movement of pawns is such a special case, this function separately
+   determines if a piece would be in the way of a pawn move*)
+(* let valid_pawn_move board (file_st, rank_st) (file_end, rank_end) = m *)
+
+(**[piece_in_way board (file_st, rank_st) (file_end, rank_end)] checks if a
+   piece is in the way of the given move. Only works for moves that are diagonal
+   or straight, otherwise assumes it is a knight move and the piece can jump
+   over*)
+let piece_in_way board (file_st, rank_st) (file_end, rank_end) =
+  let valid = ref true in
+  let file_diff = file_end - file_st in
+  let rank_diff = rank_end - rank_st in
+  if file_diff <> 0 && rank_diff = 0 then
+    if file_diff < 0 then
+      for x = file_st - 1 to file_end - 1 do
+        if piece_exists board rank_st x then valid := false else ()
+      done
+    else if file_diff > 0 then
+      for x = file_end - 1 to file_st - 1 do
+        if piece_exists board rank_st x then valid := false else ()
+      done
+    else ()
+  else if file_diff = 0 && rank_diff <> 0 then
+    if rank_diff < 0 then
+      for x = rank_st to rank_end do
+        if piece_exists board x file_st then valid := false else ()
+      done
+    else if file_diff > 0 then
+      for x = rank_end to rank_st do
+        if piece_exists board x file_st then valid := false else ()
+      done
+    else ()
+  else if Int.abs file_diff = Int.abs rank_diff then
+    let rank_mult = if rank_diff < 0 then -1 else 1 in
+    let file_mult = if file_diff < 0 then -1 else 1 in
+    for x = 1 to Int.abs file_diff - 1 do
+      if
+        piece_exists board
+          (rank_st + (x * rank_mult))
+          (file_st + (x * file_mult))
+      then valid := false
+    done
+  else ();
+  !valid
+
 let make_move board (file_st, rank_st) (file_end, rank_end) =
   let piece = board.board.(rank_st).(file_st) in
   match piece with
   | Some piece ->
-      if Piece.valid_pattern (file_st, rank_st) (file_end, rank_end) piece then (
+      if
+        Piece.valid_pattern (file_st, rank_st) (file_end, rank_end) piece
+        && piece_in_way board (file_st, rank_st) (file_end, rank_end)
+        && not (same_color board piece (file_end, rank_end))
+      then (
         board.board.(rank_end).(file_end) <- Some piece;
         board.board.(rank_st).(file_st) <- None;
         (match board.curr_turn with
