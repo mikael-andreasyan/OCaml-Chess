@@ -24,7 +24,10 @@ val get_piece : t -> int * int -> Piece.t option
 (**[get_piece (file, rank)] returns [Some piece] if there is a piece present at
    (file, rank). Otherwise, return [None]*)
 
-val legal_moves : t -> (int * int) * (int * int) list
+val legal_moves : t -> ((int * int) * (int * int)) list
+(**[legal_moves board] returns a list of all the legal moves possible in the
+   board. In each given entry, the first tuple represents starting position and
+   the second one represents the ending position of a piece*)
 
 val total_moves : t -> int
 (**A move is when any player white or black moves their piece. Returns total
