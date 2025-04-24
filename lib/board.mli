@@ -1,7 +1,7 @@
 open Piece
 
 type t
-(**A mutable type that represents a piece*)
+(**A persistent type that represents a board*)
 
 val make_move : t -> int * int -> int * int -> t * bool
 (**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
@@ -26,7 +26,6 @@ val get_piece : t -> int * int -> Piece.t option
 
 val legal_moves : t -> (int * int) * (int * int) list
 
-(**A move is when any player white or black moves their piece. Returns total number of moves played*)
 val total_moves : t -> int
-
-val 
+(**A move is when any player white or black moves their piece. Returns total
+   number of moves played*)
