@@ -30,26 +30,17 @@ module MaterialEngine (I : IncompleteEngineSettings) : EngineSettings = struct
       for y = 0 to 7 do
         match Board.get_piece board (x, y) with
         | None -> ()
-        | Some piece -> (
-            match Piece.get_type piece with
-            | Piece.Pawn ->
-                if Piece.get_color piece = Piece.White then white := !white + 1
-                else black := !black + 1
-            | Piece.Knight ->
-                if Piece.get_color piece = Piece.White then white := !white + 3
-                else black := !black + 3
-            | Piece.Bishop ->
-                if Piece.get_color piece = Piece.White then white := !white + 3
-                else black := !black + 3
-            | Piece.Rook ->
-                if Piece.get_color piece = Piece.White then white := !white + 5
-                else black := !black + 5
-            | Piece.Queen ->
-                if Piece.get_color piece = Piece.White then white := !white + 9
-                else black := !black + 9
-            | Piece.King ->
-                if Piece.get_color piece = Piece.White then white := !white + 20
-                else black := !black + 20)
+        | Some piece ->
+            let points =
+              match Piece.get_type piece with
+              | Piece.Pawn -> 1
+              | Piece.Knight | Piece.Bishop -> 3
+              | Piece.Rook -> 5
+              | Piece.Queen -> 9
+              | Piece.King -> 20
+            in
+            if Piece.get_color piece = Piece.White then white := !white + points
+            else black := !black + points
       done
     done;
     !white - !black
@@ -143,44 +134,22 @@ module PieceSquareTable (I : IncompleteEngineSettings) : EngineSettings = struct
       for y = 0 to 7 do
         match Board.get_piece board (x, y) with
         | None -> ()
-        | Some piece -> (
-            match Piece.get_type piece with
-            | Piece.Pawn ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 1 + pawn_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 1 + pawn_pst.(x').(y')
-            | Piece.Knight ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 3 + knight_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 3 + knight_pst.(x').(y')
-            | Piece.Bishop ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 3 + bishop_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 3 + bishop_pst.(x').(y')
-            | Piece.Rook ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 5 + rook_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 5 + rook_pst.(x').(y')
-            | Piece.Queen ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 9 + queen_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 9 + queen_pst.(x').(y')
-            | Piece.King ->
-                if Piece.get_color piece = Piece.White then
-                  white := !white + 20 + king_pst.(x).(y)
-                else
-                  let x', y' = flip_black_pos x y in
-                  black := !black + 20 + king_pst.(x').(y'))
+        | Some piece ->
+            let x', y' =
+              if Piece.get_color piece = Piece.White then (x, y)
+              else flip_black_pos x y
+            in
+            let points =
+              match Piece.get_type piece with
+              | Piece.Pawn -> 1 + pawn_pst.(x').(y')
+              | Piece.Knight -> 3 + knight_pst.(x').(y')
+              | Piece.Bishop -> 3 + bishop_pst.(x').(y')
+              | Piece.Rook -> 5 + rook_pst.(x').(y')
+              | Piece.Queen -> 9 + queen_pst.(x').(y')
+              | Piece.King -> 20 + king_pst.(x').(y')
+            in
+            if Piece.get_color piece = Piece.White then white := !white + points
+            else black := !black + points
       done
     done;
     !white - !black
@@ -267,7 +236,68 @@ module PawnStruct (I : IncompleteEngineSettings) : EngineSettings = struct
 
   (**[eval board] now uses both the board material and also the PST in order to
      evaluate the board as well as pawn structure.*)
-  let eval board = 0
+  let eval board =
+    let white = ref 0 in
+    let black = ref 0 in
+    let white_pawn_positions = ref [] in
+    let black_pawn_positions = ref [] in
+
+    for x = 0 to 7 do
+      for y = 0 to 7 do
+        match Board.get_piece board (x, y) with
+        | None -> ()
+        | Some piece ->
+            let color = Piece.get_color piece in
+            let piece_type = Piece.get_type piece in
+            if piece_type = Piece.Pawn then
+              if color = Piece.White then
+                white_pawn_positions := (x, y) :: !white_pawn_positions
+              else black_pawn_positions := (x, y) :: !black_pawn_positions;
+
+            let x', y' =
+              if color = Piece.White then (x, y) else flip_black_pos x y
+            in
+
+            let points =
+              match piece_type with
+              | Piece.Pawn -> 1 + pawn_pst.(x').(y')
+              | Piece.Knight -> 3 + knight_pst.(x').(y')
+              | Piece.Bishop -> 3 + bishop_pst.(x').(y')
+              | Piece.Rook -> 5 + rook_pst.(x').(y')
+              | Piece.Queen -> 9 + queen_pst.(x').(y')
+              | Piece.King -> 20 + king_pst.(x').(y')
+            in
+
+            if color = Piece.White then white := !white + points
+            else black := !black + points
+      done
+    done;
+
+    let pawn_structure_penalty (positions : (int * int) list) : int =
+      let files = Array.make 8 0 in
+      List.iter (fun (_, y) -> files.(y) <- files.(y) + 1) positions;
+
+      let penalty = ref 0 in
+      for y = 0 to 7 do
+        let count = files.(y) in
+        if count > 1 then penalty := !penalty + ((count - 1) * 10);
+
+        let is_isolated =
+          (y = 0 || files.(y - 1) = 0) && (y = 7 || files.(y + 1) = 0)
+        in
+        if count > 0 && is_isolated then penalty := !penalty + 15;
+        if count = 1 then
+          let left = if y > 0 then files.(y - 1) else 0 in
+          let right = if y < 7 then files.(y + 1) else 0 in
+          if left = 0 && right = 0 then penalty := !penalty + 20
+      done;
+      !penalty
+    in
+
+    let white_penalty = pawn_structure_penalty !white_pawn_positions in
+    let black_penalty = pawn_structure_penalty !black_pawn_positions in
+
+    !white - white_penalty - (!black - black_penalty)
 
   let depth = I.depth
 end

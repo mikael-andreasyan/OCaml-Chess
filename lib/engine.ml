@@ -26,15 +26,6 @@ module BasicEngine (Settings : EngineSettings) : Engine = struct
 
   let rec generate_tree board depth =
     let eval = eval board in
-    let children = ref [] in
-    for x = 0 to 7 do
-      for y = 0 to 7 do
-        match Board.get_piece board (x, y) with
-        | None -> ()
-        | Some piece -> (
-            match Piece.get_type piece with
-            | Piece.Pawn -> if y = 1 || y = 6 then 
-            | _ -> failwith "fuck")
-      done
-    done
+    let legal_moves = Board.legal_moves board in
+    List.map (Board.make_move board)
 end

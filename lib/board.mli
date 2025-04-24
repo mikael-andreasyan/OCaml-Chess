@@ -3,7 +3,7 @@ open Piece
 type t
 (**A persistent type that represents a board*)
 
-val make_move : t -> int * int -> int * int -> t * bool
+val make_move : t -> (int * int) * (int * int) -> t * bool
 (**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
    the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
    illegal, then the function returns false and makes no changes to the board.
@@ -24,7 +24,7 @@ val get_piece : t -> int * int -> Piece.t option
 (**[get_piece (file, rank)] returns [Some piece] if there is a piece present at
    (file, rank). Otherwise, return [None]*)
 
-val legal_moves : t -> (int * int) * (int * int) list
+val legal_moves : t -> ((int * int) * (int * int)) list
 
 val total_moves : t -> int
 (**A move is when any player white or black moves their piece. Returns total
