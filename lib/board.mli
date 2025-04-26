@@ -13,7 +13,7 @@ val total_moves : t -> int
    is when any player white or black moves their piece. Returns total number of
    moves played*)
 
-val make_board1 : Int64.t array array -> int -> int -> int -> int -> t
+val make_board1 : int64 array array -> int -> int -> int -> int64 -> t
 (**[make_board1 board turn moves castlingRights enPassant] is a new board with
    the given values.*)
 
@@ -26,6 +26,12 @@ val legal_moves : t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
    board. *)
 
+val legal_moves_bishop : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_rook : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_queen : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_king : t -> ((int * int) * (int * int)) Base.Queue.t
+val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
+
 val make_move : t -> (int * int) * (int * int) -> bool * t
 (**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
    the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
@@ -37,7 +43,7 @@ val make_move : t -> (int * int) * (int * int) -> bool * t
    entry as the board (unchanged if move was invalid) and a boolean that says if
    the move was invalid*)
 
-val printer : t -> string
+val printerBoard : t -> string
 (**[printer board] prints out a string of the board.*)
 
 val get_piece : t -> int * int -> int option
