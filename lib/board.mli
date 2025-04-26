@@ -13,21 +13,39 @@ val total_moves : t -> int
    is when any player white or black moves their piece. Returns total number of
    moves played*)
 
-(* val make_board : string -> int -> int -> t (**[make_board fen color moves] is
-   a new board with a the given fen string applied to the posistion.
+val make_board1 : Int64.t array array -> int -> int -> int -> int -> t
+(**[make_board1 board turn moves castlingRights enPassant] is a new board with
+   the given values.*)
 
-   Requires: that [fen] is a valid fen string. *)
+val make_board2 : string -> t
+(**[make_board2 fen] is a new board with given FEN string.
 
-   val legal_moves : t -> t Dynarray.t (**[legal_moves board] is a list of all
-   legal moves that can be done by a given board. *)
+   Requires: [fen] must be a valid fen string.*)
 
-   val make_move : t -> (int * int) * (int * int) -> t * bool (**[make_move
-   board (file_st, rank_st) (file_end, rank_end)] attempts to move the piece at
-   [file_st, rank_st] to [file_end, rank_end]. If the movement is illegal, then
-   the function returns false and makes no changes to the board. Otherwise, it
-   mutates the current board to represent the move, changes board state, and
-   advances the turn. Requires: [file_st, rank_st] and [file_end, rank_end] are
-   valid positions on a chess board. For this function, the numbers 0-7
-   represent the letters a-h. Returns: a tuple with the first entry as the board
-   (unchanged if move was invalid) and a boolean that says if the move was
-   invalid*) *)
+val legal_moves : t -> ((int * int) * (int * int)) Base.Queue.t
+(**[legal_moves board] is a list of all legal moves that can be done by a given
+   board. *)
+
+val make_move : t -> (int * int) * (int * int) -> bool * t
+(**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
+   the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
+   illegal, then the function returns false and makes no changes to the board.
+   Otherwise, it mutates the current board to represent the move, changes board
+   state, and advances the turn. Requires: [file_st, rank_st] and
+   [file_end, rank_end] are valid positions on a chess board. For this function,
+   the numbers 0-7 represent the letters a-h. Returns: a tuple with the first
+   entry as the board (unchanged if move was invalid) and a boolean that says if
+   the move was invalid*)
+
+val printer : t -> string
+(**[printer board] prints out a string of the board.*)
+
+val get_piece : t -> int * int -> int option
+(**[get_piece board (rank, file)] gives the piece at the selected rank and file.
+   It outputs an int where the 4th bit represents the color and the 1st to 3rd
+   bit represent the piece type.
+
+   Example: 1001 is a white pawn.
+
+   Here is a key: Pawn = 001, Knight = 010, Bishop = 011, Rook = 100, Queen =
+   101, King = 110.*)
