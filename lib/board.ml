@@ -1,145 +1,244 @@
+open Base
+
 type t = {
-  mutable board : Piece.t option array array;
-  mutable curr_turn : Piece.color;
+  board : Int64.t array array;
+  mutable turn : int;
+  mutable moves : int;
+  mutable castlingRights : int;
+  mutable enPassant : int;
 }
-(**AF: the board is represented by option Piece.t array array*)
+(**AF: the board is represented by 6 two dimensional arrays of 64 bit ints from
+   Jane Street's base library. The first index associates itself with a piece
+   type such as pawn and the second index associates itself with a color type.
+   Lastly, each index in the 64 bit is one square on the chess board.
 
-(**returns if the piece tried to move to a tile with the same color on it*)
-let same_color board piece (file_end, rank_end) =
-  match board.board.(rank_end).(file_end) with
-  | None -> false
-  | Some other_piece -> Piece.get_color piece = Piece.get_color other_piece
+   Ex) board.(0).(1) contains the posistions for all black pawns. *)
 
-let piece_exists board rank file =
-  match board.board.(rank).(file) with
-  | Some _ -> true
-  | None -> false
+(**Somce constants for convience*)
+let sliding_compass = [| 1; 8; 9; 7 |]
 
-(**Since the movement of pawns is such a special case, this function separately
-   determines if a piece would be in the way of a pawn move*)
-(* let valid_pawn_move board (file_st, rank_st) (file_end, rank_end) = m *)
+let knight_compass = [| 6; 15; 17; 10 |]
 
-(**[piece_in_way board (file_st, rank_st) (file_end, rank_end)] checks if a
-   piece is in the way of the given move. Only works for moves that are diagonal
-   or straight, otherwise assumes it is a knight move and the piece can jump
-   over*)
-let piece_in_way board (file_st, rank_st) (file_end, rank_end) =
-  let valid = ref true in
-  let file_diff = file_end - file_st in
-  let rank_diff = rank_end - rank_st in
-  if file_diff <> 0 && rank_diff = 0 then
-    if file_diff < 0 then
-      for x = file_end to file_st do
-        if x <> file_st && x <> file_end then
-          if piece_exists board rank_st x then valid := false else ()
-        else ()
-      done
-    else if file_diff > 0 then
-      for x = file_st to file_end do
-        if x <> file_st && x <> file_end then
-          if piece_exists board rank_st x then valid := false else ()
-        else ()
-      done
-    else ()
-  else if file_diff = 0 && rank_diff <> 0 then
-    if rank_diff < 0 then
-      for x = rank_end to rank_st do
-        if x <> rank_st && x <> rank_end then
-          if piece_exists board x file_st then valid := false else ()
-        else ()
-      done
-    else if rank_diff > 0 then
-      for x = rank_st to rank_end do
-        if x <> rank_st && x <> rank_end then
-          if piece_exists board x file_st then valid := false else ()
-        else ()
-      done
-    else ()
-  else if Int.abs file_diff = Int.abs rank_diff then
-    let rank_mult = if rank_diff < 0 then -1 else 1 in
-    let file_mult = if file_diff < 0 then -1 else 1 in
-    for x = 1 to Int.abs file_diff - 1 do
-      if
-        piece_exists board
-          (rank_st + (x * rank_mult))
-          (file_st + (x * file_mult))
-      then valid := false
-    done
-  else ();
-  !valid
+let bottomRow =
+  Int64.of_int64 0b100000001000000010000000100000001000000010000000100000001L
 
-(**Only for checking validity of pawn moves. Returns true in all other cases*)
-let valid_pawn_move board (file_st, rank_st) (file_end, rank_end) =
-  let piece = board.board.(rank_st).(file_st) in
-  match piece with
-  | Some piece -> (
-      match Piece.get_type piece with
-      | Pawn ->
-          let rank_diff = rank_end - rank_st in
-          let file_diff = file_end - file_st in
-          if (Int.abs rank_diff = 1 || Int.abs rank_diff = 2) && file_diff = 0
-          then not (piece_exists board rank_end file_end)
-          else if Int.abs file_diff = Int.abs rank_diff then
-            piece_exists board rank_end file_end
-          else true
-      | _ -> true)
-  | None -> true
+let topRow =
+  Int64.of_int64
+    0b1000000010000000100000001000000010000000100000001000000010000000L
 
-let make_move board (file_st, rank_st) (file_end, rank_end) =
-  let piece = board.board.(rank_st).(file_st) in
-  match piece with
-  | Some piece ->
-      if
-        Piece.valid_pattern (file_st, rank_st) (file_end, rank_end) piece
-        && piece_in_way board (file_st, rank_st) (file_end, rank_end)
-        && (not (same_color board piece (file_end, rank_end)))
-        && valid_pawn_move board (file_st, rank_st) (file_end, rank_end)
-      then (
-        board.board.(rank_end).(file_end) <- Some piece;
-        board.board.(rank_st).(file_st) <- None;
-        (match board.curr_turn with
-        | White -> board.curr_turn <- Black
-        | Black -> board.curr_turn <- White);
-        true)
-      else false
-  | None -> false
+let leftCol = Int64.of_int64 0b1111111L
 
-let setup array =
-  array.(7).(0) <- Some Piece.(make_piece Black Rook);
-  array.(7).(1) <- Some Piece.(make_piece Black Knight);
-  array.(7).(2) <- Some Piece.(make_piece Black Bishop);
-  array.(7).(3) <- Some Piece.(make_piece Black Queen);
-  array.(7).(4) <- Some Piece.(make_piece Black King);
-  array.(7).(5) <- Some Piece.(make_piece Black Bishop);
-  array.(7).(6) <- Some Piece.(make_piece Black Knight);
-  array.(7).(7) <- Some Piece.(make_piece Black Rook);
-  for x = 0 to 7 do
-    array.(6).(x) <- Some Piece.(make_piece Black Pawn)
+let rightCol =
+  Int64.of_int64
+    0b1111111000000000000000000000000000000000000000000000000000000000L
+
+let castle =
+  [|
+    [|
+      Int64.of_int64 0b1000000010000000000000000000000000000000000000000L;
+      Int64.of_int64 0b1000000010000000100000000L;
+    |];
+    [|
+      Int64.of_int64 0b10000000100000000000000000000000000000000000000000000000L;
+      Int64.of_int64 0b110000000100000001000000000000000L;
+    |];
+  |]
+
+let pawn = 0
+let knight = 1
+let bishop = 2
+let rook = 3
+let queen = 4
+let king = 5
+let current_turn board = board.turn
+let total_moves board = board.moves
+let make_board fen color moves = failwith "incomplete"
+
+(**Outputs the tuple of the chess posistion (rank, file)*)
+let bit_to_tuple bit =
+  let squareIndex = Int64.(of_int (ceil_log2 bit)) in
+  ( Int64.(to_int_exn (shift_right squareIndex 3)),
+    Int64.(to_int_exn (bit_and squareIndex (of_int 7))) )
+
+let check_spot board bit color =
+  let present = ref false in
+  for piece = pawn to king do
+    if Int64.(equal (bit_and board.board.(piece).(color) bit) Int64.zero) then
+      ()
+    else present := true
   done;
-  array.(0).(0) <- Some Piece.(make_piece White Rook);
-  array.(0).(1) <- Some Piece.(make_piece White Knight);
-  array.(0).(2) <- Some Piece.(make_piece White Bishop);
-  array.(0).(3) <- Some Piece.(make_piece White Queen);
-  array.(0).(4) <- Some Piece.(make_piece White King);
-  array.(0).(5) <- Some Piece.(make_piece White Bishop);
-  array.(0).(6) <- Some Piece.(make_piece White Knight);
-  array.(0).(7) <- Some Piece.(make_piece White Rook);
-  for x = 0 to 7 do
-    array.(1).(x) <- Some Piece.(make_piece White Pawn)
+  !present
+
+let legal_moves board =
+  let ans = Queue.create () in
+  for piece = pawn to king do
+    (*Getting bit board for chosen piece*)
+    let pieceBitBoard = ref board.board.(piece).(board.turn) in
+    (*Special bitshifting operations for "sliding pieces" such as the bishop,
+      queen, and rook.*)
+    if piece >= bishop && piece <= queen then
+      (*Selecting start and finish indices for the compass array*)
+      let start = if piece = rook || piece = queen then 0 else 2 in
+      let finish = if piece = bishop || piece = queen then 3 else 1 in
+      for index = start to finish do
+        (*Obtaining the least significant bit of the bit board.*)
+        let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+        (*Obtain bit shift value from compass*)
+        let shiftBit = sliding_compass.(index) in
+        (*We have to move all pieces on the bit board so this is the requirement
+          in the while loop.*)
+        while Int64.equal !pieceBitBoard Int64.zero do
+          (*Stop condition for when we hit the border or we hit a friendly piece
+            or we capture an enemy piece.*)
+          let stop = ref false in
+          let prev = ref lsb in
+          while not !stop do
+            (*Getting new move of selected piece*)
+            let move = Int64.shift_left !prev shiftBit in
+            (*Getting border int.*)
+            let borderBit =
+              if shiftBit = 9 || shiftBit = 1 then bottomRow
+              else if shiftBit = 7 then topRow
+              else Int64.zero
+            in
+            (*Checking if hitting border or hitting friendly piece then adding
+              if not.*)
+            if
+              Int64.(equal (bit_and move borderBit) Int64.zero)
+              || check_spot board move board.turn
+            then stop := true
+            else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
+            (*If capturing should stop.*)
+            if check_spot board move (board.turn lxor 1) then stop := true
+            else ();
+            (*Updating prev value.*)
+            prev := move
+          done;
+          (*Same thing but we shift to the right.*)
+          stop := false;
+          while not !stop do
+            let move = Int64.shift_right_logical !prev shiftBit in
+            let borderBit =
+              if shiftBit = 9 || shiftBit = 1 then topRow
+              else if shiftBit = 7 then bottomRow
+              else Int64.zero
+            in
+            if
+              Int64.(equal (bit_and move borderBit) Int64.zero)
+              || check_spot board move board.turn
+            then stop := true
+            else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
+            if check_spot board move (board.turn lxor 1) then stop := true
+            else ();
+            prev := move
+          done;
+          (*Updating pieceBitBoard to remove the previous lsb.*)
+          pieceBitBoard :=
+            Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+        done
+      done
+    else if piece = pawn then
+      (*File data for double pawn pushing*)
+      let fileForDouble = if board.turn = 1 then 1 else 6 in
+      (*Obtaining the least significant bit of the bit board.*)
+      let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+      (*Getting tuple of the start posistion.*)
+      let rank, file = bit_to_tuple lsb in
+      while Int64.equal !pieceBitBoard Int64.zero do
+        let move =
+          if board.turn = 1 then Int64.shift_left lsb 1
+          else Int64.shift_right_logical lsb 1
+        in
+        let borderBit = if board.turn = 1 then bottomRow else topRow in
+        if
+          Int64.(equal (bit_and move borderBit) Int64.zero)
+          || check_spot board move board.turn
+        then ()
+        else Queue.enqueue ans ((rank, file), bit_to_tuple move);
+        (*Double pawn pushing*)
+        if file = fileForDouble then
+          let move =
+            if board.turn = 1 then Int64.shift_left lsb 2
+            else Int64.shift_right_logical lsb 2
+          in
+          let borderBit = if board.turn = 1 then bottomRow else topRow in
+          if
+            Int64.(equal (bit_and move borderBit) Int64.zero)
+            || check_spot board move board.turn
+          then ()
+          else Queue.enqueue ans ((rank, file), bit_to_tuple move)
+        else ();
+        (*Updating pieceBitBoard to remove the previous lsb.*)
+        pieceBitBoard :=
+          Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+      done
+      (*Piece must be a king in which case we can just apply the bit shifts.*)
+    else if piece = king then (
+      let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+      for index = 0 to 3 do
+        let shiftBit = sliding_compass.(index) in
+        let move = Int64.shift_left lsb shiftBit in
+        let borderBit =
+          if shiftBit = 9 || shiftBit = 1 then bottomRow
+          else if shiftBit = 7 then topRow
+          else Int64.zero
+        in
+        if
+          Int64.(equal (bit_and move borderBit) Int64.zero)
+          || check_spot board move board.turn
+        then ()
+        else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
+      done;
+      for index = 0 to 3 do
+        let shiftBit = sliding_compass.(index) in
+        let move = Int64.shift_right_logical lsb shiftBit in
+        let borderBit =
+          if shiftBit = 9 || shiftBit = 1 then topRow
+          else if shiftBit = 7 then bottomRow
+          else Int64.zero
+        in
+        if
+          Int64.(equal (bit_and move borderBit) Int64.zero)
+          || check_spot board move board.turn
+        then ()
+        else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
+      done
+      (*Piece must be a knight, we have special compass for this.*))
+    else
+      let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+      for index = 0 to 3 do
+        let shiftBit = knight_compass.(index) in
+        let move = Int64.shift_left lsb shiftBit in
+        let borderBit =
+          if shiftBit = 9 || shiftBit = 1 then bottomRow
+          else if shiftBit = 7 then topRow
+          else Int64.zero
+        in
+        if
+          Int64.(equal (bit_and move borderBit) Int64.zero)
+          || check_spot board move board.turn
+        then ()
+        else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
+      done;
+      for index = 0 to 3 do
+        let shiftBit = knight_compass.(index) in
+        let move = Int64.shift_right_logical lsb shiftBit in
+        let borderBit =
+          if shiftBit = 9 || shiftBit = 1 then topRow
+          else if shiftBit = 7 then bottomRow
+          else Int64.zero
+        in
+        if
+          Int64.(equal (bit_and move borderBit) Int64.zero)
+          || check_spot board move board.turn
+        then ()
+        else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
+      done;
+      pieceBitBoard :=
+        Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
   done;
-  array
-
-(**in this implementation the first array is the rank (rows) and the second
-   array are the files (cols).*)
-let make_board () =
-  {
-    board =
-      setup
-        (Array.init 8 (fun _ -> Array.init 8 (fun _ -> (None : Piece.t option))));
-    curr_turn = White;
-  }
-
-(**Returns which color's turn it currently is*)
-let current_turn board = board.curr_turn
-
-let get_piece board (file, rank) = board.board.(rank).(file)
+  (*Castling*)
+  ();
+  (*En Passant*)
+  ();
+  ans
