@@ -304,7 +304,7 @@ let legal_moves_bishop board =
 (**[legal_moves_rook board] is a list of all legal rook moves.*)
 let legal_moves_rook board =
   let ans = Queue.create () in
-  let pieceBitBoard = ref board.board.(rook).(board.turn) in
+  let pieceBitBoard = ref board.board.(bishop).(board.turn) in
   while not (Int64.equal !pieceBitBoard Int64.zero) do
     let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
     for index = 0 to 1 do
