@@ -13,14 +13,9 @@ val total_moves : t -> int
    is when any player white or black moves their piece. Returns total number of
    moves played*)
 
-val make_board1 : int64 array array -> int -> int -> int -> int64 -> t
+val make_board : int64 array array -> int -> int -> int -> int64 -> t
 (**[make_board1 board turn moves castlingRights enPassant] is a new board with
    the given values.*)
-
-val make_board2 : string -> t
-(**[make_board2 fen] is a new board with given FEN string.
-
-   Requires: [fen] must be a valid fen string.*)
 
 val legal_moves : t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
@@ -32,7 +27,7 @@ val legal_moves_queen : t -> ((int * int) * (int * int)) Base.Queue.t
 val legal_moves_king : t -> ((int * int) * (int * int)) Base.Queue.t
 val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
 
-val make_move : t -> (int * int) * (int * int) -> bool * t
+val make_move : t -> (int * int) * (int * int) -> bool
 (**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
    the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
    illegal, then the function returns false and makes no changes to the board.
@@ -42,6 +37,9 @@ val make_move : t -> (int * int) * (int * int) -> bool * t
    the numbers 0-7 represent the letters a-h. Returns: a tuple with the first
    entry as the board (unchanged if move was invalid) and a boolean that says if
    the move was invalid*)
+
+val unmake_move : t -> (int * int) * (int * int) -> bool * t
+(***)
 
 val printerBoard : t -> string
 (**[printer board] prints out a string of the board.*)

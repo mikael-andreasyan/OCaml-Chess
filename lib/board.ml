@@ -106,6 +106,8 @@ let rook = 3
 let queen = 4
 let king = 5
 let colorsArray = [| 8; 0 |]
+let white = 0
+let black = 1
 
 let printer =
   [| [| "p"; "h"; "b"; "r"; "q"; "k" |]; [| "P"; "H"; "B"; "R"; "Q"; "K" |] |]
@@ -157,8 +159,6 @@ let total_moves board = board.moves
 
 let make_board1 board turn moves castlingRights enPassant =
   { board; turn; moves; castlingRights; enPassant }
-
-let make_board2 fen = failwith "incomplete"
 
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
@@ -218,7 +218,7 @@ let legal_moves_pawn board =
 let legal_moves_knight board =
   let ans = Queue.create () in
   let pieceBitBoard = ref board.board.(knight).(board.turn) in
-  let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+  let lsb = Int64.(!pieceBitBoard land neg !pieceBitBoard) in
   while Int64.equal !pieceBitBoard Int64.zero do
     for index = 0 to 3 do
       let shiftBit = knight_compass.(index) in
@@ -229,7 +229,7 @@ let legal_moves_knight board =
         else Int64.zero
       in
       if
-        Int64.(equal (bit_and move borderBit) Int64.zero)
+        Int64.(equal (move land borderBit) Int64.zero)
         || check_spot board move board.turn
       then ()
       else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
@@ -243,159 +243,269 @@ let legal_moves_knight board =
         else Int64.zero
       in
       if
-        Int64.(equal (bit_and move borderBit) Int64.zero)
+        Int64.(equal (move land borderBit) Int64.zero)
         || check_spot board move board.turn
       then ()
       else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move)
     done;
-    pieceBitBoard := Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+    pieceBitBoard := Int64.(!pieceBitBoard land (!pieceBitBoard - Int64.one))
   done;
   ans
 
 (**[legal_moves_bishop board] is a list of all legal bishop moves.*)
 let legal_moves_bishop board =
   let ans = Queue.create () in
+  let bit_to_tuple bit =
+    let squareIndex = Int64.ctz bit in
+    (Int.shift_right_logical squareIndex 3, squareIndex land 7)
+  in
+  let union =
+    [|
+      Int64.( lor )
+        board.board.(king).(white)
+        (Int64.( lor )
+           board.board.(queen).(white)
+           (Int64.( lor )
+              board.board.(rook).(white)
+              (Int64.( lor )
+                 board.board.(bishop).(white)
+                 (Int64.( lor )
+                    board.board.(pawn).(white)
+                    board.board.(knight).(white)))));
+      Int64.( lor )
+        board.board.(king).(black)
+        (Int64.( lor )
+           board.board.(queen).(black)
+           (Int64.( lor )
+              board.board.(rook).(black)
+              (Int64.( lor )
+                 board.board.(bishop).(black)
+                 (Int64.( lor )
+                    board.board.(pawn).(black)
+                    board.board.(knight).(black)))));
+    |]
+  in
   let pieceBitBoard = ref board.board.(bishop).(board.turn) in
   while not (Int64.equal !pieceBitBoard Int64.zero) do
-    let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+    let lsb = Int64.(!pieceBitBoard land neg !pieceBitBoard) in
     for index = 2 to 3 do
       let shiftBit = sliding_compass.(index) in
       let stop = ref false in
       let prev = ref lsb in
+      let borderBit = if shiftBit = 9 then bottomRow else topRow in
       while not !stop do
         let move = Int64.shift_left !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then bottomRow
-          else if shiftBit = 7 then topRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done;
       stop := false;
       prev := lsb;
+      let borderBit = if shiftBit = 9 then topRow else bottomRow in
       while not !stop do
         let move = Int64.shift_right_logical !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then topRow
-          else if shiftBit = 7 then bottomRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done
     done;
-    pieceBitBoard := Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+    pieceBitBoard := Int64.(!pieceBitBoard land (!pieceBitBoard - Int64.one))
   done;
   ans
 
 (**[legal_moves_rook board] is a list of all legal rook moves.*)
 let legal_moves_rook board =
   let ans = Queue.create () in
-  let pieceBitBoard = ref board.board.(bishop).(board.turn) in
+  let bit_to_tuple bit =
+    let squareIndex = Int64.ctz bit in
+    (Int.shift_right_logical squareIndex 3, squareIndex land 7)
+  in
+  let union =
+    [|
+      Int64.( lor )
+        board.board.(king).(white)
+        (Int64.( lor )
+           board.board.(queen).(white)
+           (Int64.( lor )
+              board.board.(rook).(white)
+              (Int64.( lor )
+                 board.board.(bishop).(white)
+                 (Int64.( lor )
+                    board.board.(pawn).(white)
+                    board.board.(knight).(white)))));
+      Int64.( lor )
+        board.board.(king).(black)
+        (Int64.( lor )
+           board.board.(queen).(black)
+           (Int64.( lor )
+              board.board.(rook).(black)
+              (Int64.( lor )
+                 board.board.(bishop).(black)
+                 (Int64.( lor )
+                    board.board.(pawn).(black)
+                    board.board.(knight).(black)))));
+    |]
+  in
+  let pieceBitBoard = ref board.board.(rook).(board.turn) in
   while not (Int64.equal !pieceBitBoard Int64.zero) do
-    let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
+    let lsb = Int64.(!pieceBitBoard land neg !pieceBitBoard) in
     for index = 0 to 1 do
       let shiftBit = sliding_compass.(index) in
       let stop = ref false in
       let prev = ref lsb in
+      let borderBit = if shiftBit = 1 then bottomRow else Int64.zero in
       while not !stop do
         let move = Int64.shift_left !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then bottomRow
-          else if shiftBit = 7 then topRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done;
       stop := false;
       prev := lsb;
+      let borderBit = if shiftBit = 1 then topRow else Int64.zero in
       while not !stop do
         let move = Int64.shift_right_logical !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then topRow
-          else if shiftBit = 7 then bottomRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done
     done;
-    pieceBitBoard := Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+    pieceBitBoard := Int64.(!pieceBitBoard land (!pieceBitBoard - Int64.one))
   done;
   ans
 
 (**[legal_moves_queen board] is a list of all legal queen moves.*)
 let legal_moves_queen board =
   let ans = Queue.create () in
-  let pieceBitBoard = ref board.board.(queen).(board.turn) in
+  let bit_to_tuple bit =
+    let squareIndex = Int64.ctz bit in
+    (Int.shift_right_logical squareIndex 3, squareIndex land 7)
+  in
+  let union =
+    [|
+      Int64.( lor )
+        board.board.(king).(white)
+        (Int64.( lor )
+           board.board.(queen).(white)
+           (Int64.( lor )
+              board.board.(rook).(white)
+              (Int64.( lor )
+                 board.board.(bishop).(white)
+                 (Int64.( lor )
+                    board.board.(pawn).(white)
+                    board.board.(knight).(white)))));
+      Int64.( lor )
+        board.board.(king).(black)
+        (Int64.( lor )
+           board.board.(queen).(black)
+           (Int64.( lor )
+              board.board.(rook).(black)
+              (Int64.( lor )
+                 board.board.(bishop).(black)
+                 (Int64.( lor )
+                    board.board.(pawn).(black)
+                    board.board.(knight).(black)))));
+    |]
+  in
+  let pieceBitBoard = ref board.board.(rook).(board.turn) in
   while not (Int64.equal !pieceBitBoard Int64.zero) do
-    let lsb = Int64.(bit_and !pieceBitBoard (neg !pieceBitBoard)) in
-    for index = 0 to 3 do
+    let lsb = Int64.(!pieceBitBoard land neg !pieceBitBoard) in
+    for index = 0 to 1 do
       let shiftBit = sliding_compass.(index) in
       let stop = ref false in
       let prev = ref lsb in
+      let borderBit =
+        if shiftBit = 9 || shiftBit = 1 then bottomRow
+        else if shiftBit = 7 then topRow
+        else Int64.zero
+      in
       while not !stop do
         let move = Int64.shift_left !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then bottomRow
-          else if shiftBit = 7 then topRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done;
       stop := false;
       prev := lsb;
+      let borderBit =
+        if shiftBit = 9 || shiftBit = 1 then topRow
+        else if shiftBit = 7 then bottomRow
+        else Int64.zero
+      in
       while not !stop do
         let move = Int64.shift_right_logical !prev shiftBit in
-        let borderBit =
-          if shiftBit = 9 || shiftBit = 1 then topRow
-          else if shiftBit = 7 then bottomRow
-          else Int64.zero
-        in
         if
-          (not Int64.(equal (bit_and move borderBit) Int64.zero))
-          || check_spot board move board.turn
-          || Int64.(equal move Int64.zero)
+          Int64.(equal move Int64.zero)
+          || (not Int64.(equal (move land borderBit) Int64.zero))
+          || not Int64.(equal (move land union.(board.turn)) Int64.zero)
         then stop := true
         else Queue.enqueue ans (bit_to_tuple lsb, bit_to_tuple move);
-        if check_spot board move (board.turn lxor 1) then stop := true else ();
+        if
+          not
+            (Int64.equal
+               (Int64.( land ) move union.(board.turn lxor 1))
+               Int64.zero)
+        then stop := true
+        else ();
         prev := move
       done
     done;
-    pieceBitBoard := Int64.(bit_and !pieceBitBoard (!pieceBitBoard - Int64.one))
+    pieceBitBoard := Int64.(!pieceBitBoard land (!pieceBitBoard - Int64.one))
   done;
   ans
 
