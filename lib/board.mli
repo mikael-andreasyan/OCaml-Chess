@@ -27,7 +27,7 @@ val legal_moves_queen : t -> ((int * int) * (int * int)) Base.Queue.t
 val legal_moves_king : t -> ((int * int) * (int * int)) Base.Queue.t
 val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
 
-val make_move : t -> (int * int) * (int * int) -> bool
+val make_move : t -> (int * int) * (int * int) -> bool * t
 (**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
    the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
    illegal, then the function returns false and makes no changes to the board.
@@ -38,8 +38,7 @@ val make_move : t -> (int * int) * (int * int) -> bool
    entry as the board (unchanged if move was invalid) and a boolean that says if
    the move was invalid*)
 
-val unmake_move : t -> (int * int) * (int * int) -> bool * t
-(***)
+(* val unmake_move : t -> (int * int) * (int * int) -> bool * t *)
 
 val printerBoard : t -> string
 (**[printer board] prints out a string of the board.*)
