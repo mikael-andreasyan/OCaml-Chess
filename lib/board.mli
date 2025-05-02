@@ -1,6 +1,21 @@
 type t
-(**A persistent type that represents a board. It contains the board
-   representation, current player color, and number of moves played.*)
+(**A ephemeral type that represents a board. It contains the board
+   representation, current player color, and some other ueful information
+   regarding castling, enpassant, etc.*)
+
+(*Some useful constants*)
+val pawn : int
+val knight : int
+val bishop : int
+val rook : int
+val queen : int
+val king : int
+val white : int
+val black : int
+val file1 : Base.Int64.t
+val file8 : Base.Int64.t
+val rankA : Base.Int64.t
+val rankH : Base.Int64.t
 
 val current_turn : t -> int
 (**[current_turn board] returns the color's turn it currently is. 0 stands for
@@ -14,21 +29,25 @@ val legal_moves : t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
    board. *)
 
-val legal_moves_bishop : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_bishop :
+  t -> Base.Int64.t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves_bishop board] is a list of all legal moves that can be done by
-   bishopes on a given board. *)
+   bishopes on a given board and with a given bishop. *)
 
-val legal_moves_rook : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_rook :
+  t -> Base.Int64.t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves_rook board] is a list of all legal moves that can be done by
-   rooks on a given board. *)
+   rooks on a given board and with a given rook. *)
 
-val legal_moves_queen : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_queen :
+  t -> Base.Int64.t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves_queen board] is a list of all legal moves that can be done by
-   queens on a given board. *)
+   queens on a given board and with a given queen. *)
 
-val legal_moves_king : t -> ((int * int) * (int * int)) Base.Queue.t
+val legal_moves_king :
+  t -> Base.Int64.t -> ((int * int) * (int * int)) Base.Queue.t
 (**[legal_moves_king board] is a list of all legal moves that can be done by
-   queens on a given board. *)
+   queens on a given board and with a given king. *)
 
 val make_move : t -> (int * int) * (int * int) -> bool
 (**[make_move board ((rank1, file1), (rank2, file2))] attempts to move the piece
@@ -77,17 +96,3 @@ val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
 
 val printerBoard : t -> string
 (**[printer board] prints out a string of the board.*)
-
-(*Some useful constants*)
-val pawn : int
-val knight : int
-val bishop : int
-val rook : int
-val queen : int
-val king : int
-val white : int
-val black : int
-val file1 : Base.Int64.t
-val file8 : Base.Int64.t
-val rankA : Base.Int64.t
-val rankH : Base.Int64.t
