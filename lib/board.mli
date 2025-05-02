@@ -6,11 +6,6 @@ val current_turn : t -> int
 (**[current_turn board] returns the color's turn it currently is. 0 stands for
    white and 1 stands for black. *)
 
-val total_moves : t -> int
-(**[total_moves board] is the total number of moves completed on a board. A move
-   is when any player white or black moves their piece. Returns total number of
-   moves played*)
-
 val make_board : int64 array array -> int -> int -> int -> int64 -> t
 (**[make_board1 board turn moves castlingRights enPassant] is a new board with
    the given values.*)
@@ -62,6 +57,18 @@ val get_piece : t -> int * int -> int option
    Here is a key: Pawn = 001, Knight = 010, Bishop = 011, Rook = 100, Queen =
    101, King = 110.*)
 
+val get_piece_bitBoard : t -> int -> int -> Base.Int64.t
+(**[get_piece_bitBoard board pieceType color] gets the bit board of a give
+   pieceType and color. *)
+
+val bit_to_tuple : Base.Int64.t -> int * int
+(**[bit_to_tuple bit] outputs the tuple of the chess posistion in the format
+   (rank, file).*)
+
+val tuple_to_bit : int * int -> Base.Int64.t
+(**[tuple_to_bit (rank, file)] outputs the bit of the chess posistion with the
+   given (rank, file).*)
+
 val player_check : t -> bool
 (**[player_check board] checks if the current player on hte board is in check.*)
 
@@ -70,3 +77,17 @@ val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
 
 val printerBoard : t -> string
 (**[printer board] prints out a string of the board.*)
+
+(*Some useful constants*)
+val pawn : int
+val knight : int
+val bishop : int
+val rook : int
+val queen : int
+val king : int
+val white : int
+val black : int
+val file1 : Base.Int64.t
+val file8 : Base.Int64.t
+val rankA : Base.Int64.t
+val rankH : Base.Int64.t

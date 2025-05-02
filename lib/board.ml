@@ -3,7 +3,6 @@ open Base
 type t = {
   board : int64 array array;
   mutable turn : int;
-  mutable moves : int;
   mutable castlingRights : int;
   mutable enPassant : int64;
 }
@@ -20,16 +19,16 @@ let sliding_compass = [| 1; 8; 9; 7 |]
 let knight_compass = [| 6; 15; 17; 10 |]
 
 (*Bit strings for the top row, bottom row, left column, and right column.*)
-let bottomRow =
+let file1 =
   Int64.of_int64 0b100000001000000010000000100000001000000010000000100000001L
 
-let topRow =
+let file8 =
   Int64.of_int64
     0b1000000010000000100000001000000010000000100000001000000010000000L
 
-let leftCol = Int64.of_int64 0b1111111L
+let rankA = Int64.of_int64 0b1111111L
 
-let rightCol =
+let rankH =
   Int64.of_int64
     0b1111111000000000000000000000000000000000000000000000000000000000L
 
@@ -97,8 +96,8 @@ let castleRook =
       Int64.of_int64 0b0L;
     |];
   |]
-
 (*Indices for the piece and colortypes.*)
+
 let pawn = 0
 let knight = 1
 let bishop = 2
@@ -112,14 +111,10 @@ let black = 1
 let printer =
   [| [| "p"; "h"; "b"; "r"; "q"; "k" |]; [| "P"; "H"; "B"; "R"; "Q"; "K" |] |]
 
-(**[bit_to_tuple bit] outputs the tuple of the chess posistion in the format
-   (rank, file).*)
 let bit_to_tuple bit =
   let squareIndex = Int64.ctz bit in
   (Int.shift_right_logical squareIndex 3, squareIndex land 7)
 
-(**[tuple_to_bit (rank, file)] outputs the bit of the chess posistion with the
-   given (rank, file).*)
 let tuple_to_bit (rank, file) =
   let index = (8 * rank) + file in
   Int64.shift_left Int64.one index
@@ -155,10 +150,9 @@ let boardCopy board =
   |]
 
 let current_turn board = board.turn
-let total_moves board = board.moves
 
 let make_board board turn moves castlingRights enPassant =
-  { board; turn; moves; castlingRights; enPassant }
+  { board; turn; castlingRights; enPassant }
 
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
@@ -171,6 +165,8 @@ let get_piece board (rank, file) =
     done
   done;
   !return
+
+let get_piece_bitBoard board pieceType color = board.board.(pieceType).(color)
 
 (**[legal_moves_pawn board] is a list of all legal pawn moves.*)
 let legal_moves_pawn board =
@@ -187,7 +183,7 @@ let legal_moves_pawn board =
       if board.turn = 1 then Int64.shift_left lsb 1
       else Int64.shift_right_logical lsb 1
     in
-    let borderBit = if board.turn = 1 then bottomRow else topRow in
+    let borderBit = if board.turn = 1 then file1 else file8 in
     if
       Int64.(equal (bit_and move borderBit) Int64.zero)
       || check_spot board move board.turn
@@ -199,7 +195,7 @@ let legal_moves_pawn board =
         if board.turn = 1 then Int64.shift_left lsb 2
         else Int64.shift_right_logical lsb 2
       in
-      let borderBit = if board.turn = 1 then bottomRow else topRow in
+      let borderBit = if board.turn = 1 then file1 else file8 in
       if
         Int64.(equal (bit_and move borderBit) Int64.zero)
         || check_spot board move board.turn
@@ -224,8 +220,8 @@ let legal_moves_knight board =
       let shiftBit = knight_compass.(index) in
       let move = Int64.shift_left lsb shiftBit in
       let borderBit =
-        if shiftBit = 9 || shiftBit = 1 then bottomRow
-        else if shiftBit = 7 then topRow
+        if shiftBit = 9 || shiftBit = 1 then file1
+        else if shiftBit = 7 then file8
         else Int64.zero
       in
       if
@@ -238,8 +234,8 @@ let legal_moves_knight board =
       let shiftBit = knight_compass.(index) in
       let move = Int64.shift_right_logical lsb shiftBit in
       let borderBit =
-        if shiftBit = 9 || shiftBit = 1 then topRow
-        else if shiftBit = 7 then bottomRow
+        if shiftBit = 9 || shiftBit = 1 then file8
+        else if shiftBit = 7 then file1
         else Int64.zero
       in
       if
@@ -287,8 +283,7 @@ let legal_moves_bishop board =
     let from_sq = bit_to_tuple from_bb in
     let rec slide2_left pos =
       let mv = shift_left pos sb2 in
-      if mv = zero || mv land bottomRow <> zero || mv land me_occ <> zero then
-        ()
+      if mv = zero || mv land file1 <> zero || mv land me_occ <> zero then ()
       else begin
         Queue.enqueue ans (from_sq, bit_to_tuple mv);
         if mv land opp_occ <> zero then () else slide2_left mv
@@ -296,7 +291,7 @@ let legal_moves_bishop board =
     in
     let rec slide2_right pos =
       let mv = shift_right_logical pos sb2 in
-      if mv = zero || mv land topRow <> zero || mv land me_occ <> zero then ()
+      if mv = zero || mv land file8 <> zero || mv land me_occ <> zero then ()
       else begin
         Queue.enqueue ans (from_sq, bit_to_tuple mv);
         if mv land opp_occ <> zero then () else slide2_right mv
@@ -304,7 +299,7 @@ let legal_moves_bishop board =
     in
     let rec slide3_left pos =
       let mv = shift_left pos sb3 in
-      if mv = zero || mv land topRow <> zero || mv land me_occ <> zero then ()
+      if mv = zero || mv land file8 <> zero || mv land me_occ <> zero then ()
       else begin
         Queue.enqueue ans (from_sq, bit_to_tuple mv);
         if mv land opp_occ <> zero then () else slide3_left mv
@@ -312,8 +307,7 @@ let legal_moves_bishop board =
     in
     let rec slide3_right pos =
       let mv = shift_right_logical pos sb3 in
-      if mv = zero || mv land bottomRow <> zero || mv land me_occ <> zero then
-        ()
+      if mv = zero || mv land file1 <> zero || mv land me_occ <> zero then ()
       else begin
         Queue.enqueue ans (from_sq, bit_to_tuple mv);
         if mv land opp_occ <> zero then () else slide3_right mv
@@ -356,10 +350,10 @@ let legal_moves_rook board =
 
   let sb0 = sliding_compass.(0) and sb1 = sliding_compass.(1) in
 
-  let rt0 = if Stdlib.( = ) sb0 1 then bottomRow else zero
-  and lt0 = if Stdlib.( = ) sb0 1 then topRow else zero
-  and rt1 = if Stdlib.( = ) sb1 1 then bottomRow else zero
-  and lt1 = if Stdlib.( = ) sb1 1 then topRow else zero in
+  let rt0 = if Stdlib.( = ) sb0 1 then file1 else zero
+  and lt0 = if Stdlib.( = ) sb0 1 then file8 else zero
+  and rt1 = if Stdlib.( = ) sb1 1 then file1 else zero
+  and lt1 = if Stdlib.( = ) sb1 1 then file8 else zero in
   while !pb <> zero do
     let from_bb = !pb land neg !pb in
     let from_sq = bit_to_tuple from_bb in
@@ -434,13 +428,13 @@ let legal_moves_queen board =
     for index = 0 to 3 do
       let shift = sliding_compass.(index) in
       let border_left =
-        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then bottomRow
-        else if Stdlib.( = ) shift 7 then topRow
+        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then file1
+        else if Stdlib.( = ) shift 7 then file8
         else zero
       in
       let border_right =
-        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then topRow
-        else if Stdlib.( = ) shift 7 then bottomRow
+        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then file8
+        else if Stdlib.( = ) shift 7 then file1
         else zero
       in
       let rec slide_left pos =
@@ -503,8 +497,8 @@ let legal_moves_king board =
     let shiftBit = sliding_compass.(index) in
     let move = Int64.shift_left lsb shiftBit in
     let borderBit =
-      if shiftBit = 9 || shiftBit = 1 then bottomRow
-      else if shiftBit = 7 then topRow
+      if shiftBit = 9 || shiftBit = 1 then file1
+      else if shiftBit = 7 then file8
       else Int64.zero
     in
     if
@@ -518,8 +512,8 @@ let legal_moves_king board =
     let shiftBit = sliding_compass.(index) in
     let move = Int64.shift_right_logical lsb shiftBit in
     let borderBit =
-      if shiftBit = 9 || shiftBit = 1 then topRow
-      else if shiftBit = 7 then bottomRow
+      if shiftBit = 9 || shiftBit = 1 then file8
+      else if shiftBit = 7 then file1
       else Int64.zero
     in
     if

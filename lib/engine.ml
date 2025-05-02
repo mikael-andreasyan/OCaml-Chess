@@ -2,8 +2,11 @@
 let pieceValuesMid = [| 82; 337; 365; 477; 1025; 0 |]
 
 let pieceValuesEnd = [| 94; 281; 297; 512; 936; 0 |]
-let gamephaseInc = [| 0; 0; 1; 1; 1; 1; 1; 2; 2; 4; 4; 0; 0 |]
+let gamephaseInc = [| 0; 1; 1; 2; 4; 0 |]
 let depth = 20
+let bishopPair = 48
+let knightPair = 16
+let rookPair = 24
 
 let pawnPSTMid =
   [|
@@ -149,6 +152,30 @@ let kingPSTEnd =
     [| -53; -34; -21; -11; -28; -14; -24; -43 |];
   |]
 
+let weakPawnPST =
+  [|
+    [| 0; 0; 0; 0; 0; 0; 0; 0 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| -10; -12; -14; -16; -16; -14; -12; -10 |];
+    [| 0; 0; 0; 0; 0; 0; 0; 0 |];
+  |]
+
+let passedPawnPST =
+  [|
+    [| 0; 0; 0; 0; 0; 0; 0; 0 |];
+    [| 20; 20; 20; 20; 20; 20; 20; 20 |];
+    [| 20; 20; 20; 20; 20; 20; 20; 20 |];
+    [| 32; 32; 32; 32; 32; 32; 32; 32 |];
+    [| 56; 56; 56; 56; 56; 56; 56; 56 |];
+    [| 92; 92; 92; 92; 92; 92; 92; 92 |];
+    [| 140; 140; 140; 140; 140; 140; 140; 140 |];
+    [| 0; 0; 0; 0; 0; 0; 0; 0 |];
+  |]
+
 let midTable =
   [|
     pawnPSTMid; knightPSTMid; bishopPSTMid; rookPSTMid; queenPSTMid; kingPSTMid;
@@ -159,12 +186,183 @@ let endTable =
     pawnPSTEnd; knightPSTEnd; bishopPSTEnd; rookPSTEnd; queenPSTEnd; kingPSTEnd;
   |]
 
+let shield1 = 10
+let shield2 = 5
+
+(**[wkingShield board color] is a score for how protected the white king is. We
+   basically want pawns in front of the king to help protect checkmate
+   opporunities. *)
+let wkingShield board =
+  let open Base.Int64 in
+  let result = ref 0 in
+  let pawns =
+    ref
+      (Board.get_piece_bitBoard board Board.pawn Board.white
+      land shift_left Board.file1 1)
+  in
+  let king =
+    Board.bit_to_tuple (Board.get_piece_bitBoard board Board.king Board.white)
+  in
+  if Stdlib.( = ) (fst king) 0 && Stdlib.( > ) (snd king) 4 then (
+    let return = ref 0 in
+    while !pawns <> zero do
+      let lsb = ref (!pawns land neg !pawns) in
+      let rank, file = Board.bit_to_tuple !lsb in
+      if Stdlib.( = ) file 1 && Stdlib.( > ) rank 4 then
+        result := Stdlib.( + ) !result shield1
+      else if Stdlib.( = ) file 2 && Stdlib.( > ) rank 4 then
+        result := Stdlib.( + ) !result shield2
+      else ();
+      pawns := !pawns land (!pawns - one)
+    done;
+    !return)
+  else if Stdlib.( = ) (fst king) 0 && Stdlib.( <= ) (snd king) 4 then (
+    let return = ref 0 in
+    while !pawns <> zero do
+      let lsb = ref (!pawns land neg !pawns) in
+      let rank, file = Board.bit_to_tuple !lsb in
+      if Stdlib.( = ) file 1 && Stdlib.( <= ) rank 4 then
+        result := Stdlib.( + ) !result shield1
+      else if Stdlib.( = ) file 2 && Stdlib.( <= ) rank 4 then
+        result := Stdlib.( + ) !result shield2
+      else ();
+      pawns := !pawns land (!pawns - one)
+    done;
+    !return)
+  else 0
+
+(**[bkingShield board color] is a score for how protected the white king is. We
+   basically want pawns in front of the king to help protect checkmate
+   opporunities. *)
+let bkingShield board =
+  let open Base.Int64 in
+  let result = ref 0 in
+  let pawns =
+    ref
+      (Board.get_piece_bitBoard board Board.pawn Board.black
+      land shift_right_logical Board.file8 1)
+  in
+  let king =
+    Board.bit_to_tuple (Board.get_piece_bitBoard board Board.king Board.black)
+  in
+  if Stdlib.( = ) (fst king) 0 && Stdlib.( > ) (snd king) 4 then (
+    let return = ref 0 in
+    while !pawns <> zero do
+      let lsb = ref (!pawns land neg !pawns) in
+      let rank, file = Board.bit_to_tuple !lsb in
+      if Stdlib.( = ) file 6 && Stdlib.( > ) rank 4 then
+        result := Stdlib.( + ) !result shield1
+      else if Stdlib.( = ) file 5 && Stdlib.( > ) rank 4 then
+        result := Stdlib.( + ) !result shield2
+      else ();
+      pawns := !pawns land (!pawns - one)
+    done;
+    !return)
+  else if Stdlib.( = ) (fst king) 0 && Stdlib.( <= ) (snd king) 4 then (
+    let return = ref 0 in
+    while !pawns <> zero do
+      let lsb = ref (!pawns land neg !pawns) in
+      let rank, file = Board.bit_to_tuple !lsb in
+      if Stdlib.( = ) file 6 && Stdlib.( <= ) rank 4 then
+        result := Stdlib.( + ) !result shield1
+      else if Stdlib.( = ) file 5 && Stdlib.( <= ) rank 4 then
+        result := Stdlib.( + ) !result shield2
+      else ();
+      pawns := !pawns land (!pawns - one)
+    done;
+    !return)
+  else 0
+
+(**The pawntable is an array of hashtables for previsouly evaluates pawn
+   structures since they can be quite expensive to calculate each time. *)
+let pawnTable = [| Hashtbl.create 256; Hashtbl.create 256 |]
+
+(**[evalPawn board pawn color] evaluates a singular pawn on the board. *)
+let evalPawn board pawn color =
+  let open Base.Int64 in
+  let flagPassed = ref 1 in
+  let flagOpposed = ref 1 in
+  let flagWeak = ref 1 in
+  let result = ref 0 in
+  let supportingPawns = Board.get_piece_bitBoard board Board.pawn color in
+  let opposingPawns =
+    Board.get_piece_bitBoard board Board.pawn (Stdlib.( lxor ) color 1)
+  in
+  let rank, file = Board.bit_to_tuple pawn in
+  let bitMaskOpposed = shift_left Board.rankA (Stdlib.( * ) 8 rank) in
+  if opposingPawns land bitMaskOpposed = zero then flagOpposed := 0 else ();
+  let bitMaskPassed =
+    bitMaskOpposed
+    lor shift_left Board.rankA (Stdlib.( * ) 8 (Stdlib.( - ) rank 1))
+    lor shift_left Board.rankA (Stdlib.( * ) 8 (Stdlib.( + ) rank 1))
+  in
+  if opposingPawns land bitMaskPassed = zero then flagPassed := 0 else ();
+  let leftPawn = shift_right_logical pawn 9 in
+  let rightPawn = shift_left pawn 7 in
+  if supportingPawns land (leftPawn land rightPawn) = zero then flagWeak := 0
+  else ();
+  if Stdlib.( = ) !flagPassed 0 then
+    result := Stdlib.( + ) !result passedPawnPST.(rank).(file)
+  else if Stdlib.( = ) !flagWeak 1 then
+    result := Stdlib.( + ) !result weakPawnPST.(rank).(file)
+  else if Stdlib.( = ) !flagOpposed 1 then result := Stdlib.( - ) !result 4
+  else ();
+  !result
+
+(**[pawnScore board] evaluates the pawn score of both black and white.*)
+let pawnScore board =
+  let open Base.Int64 in
+  let whitePawns =
+    ref (Board.get_piece_bitBoard board Board.pawn Board.white)
+  in
+  let blackPawns =
+    ref (Board.get_piece_bitBoard board Board.pawn Board.white)
+  in
+  if
+    Hashtbl.mem pawnTable.(Board.white) !whitePawns
+    && Hashtbl.mem pawnTable.(Board.black) !blackPawns
+  then
+    Stdlib.( - )
+      (Hashtbl.find pawnTable.(Board.white) !whitePawns)
+      (Hashtbl.find pawnTable.(Board.black) !blackPawns)
+  else
+    let whiteScore =
+      ref
+        (if Hashtbl.mem pawnTable.(Board.white) !whitePawns then
+           Hashtbl.find pawnTable.(Board.white) !whitePawns
+         else 0)
+    and blackScore =
+      ref
+        (if Hashtbl.mem pawnTable.(Board.black) !whitePawns then
+           Hashtbl.find pawnTable.(Board.black) !whitePawns
+         else 0)
+    in
+    if Stdlib.( = ) !whiteScore 0 then
+      while !whitePawns <> zero do
+        let lsb = ref (!whitePawns land neg !whitePawns) in
+        whiteScore := Stdlib.( + ) !whiteScore (evalPawn board !lsb Board.white);
+        whitePawns := !whitePawns land (!whitePawns - one)
+      done
+    else if Stdlib.( = ) !blackScore 0 then
+      while !blackPawns <> zero do
+        let lsb = ref (!blackPawns land neg !blackPawns) in
+        blackScore := Stdlib.( + ) !blackScore (evalPawn board !lsb Board.black);
+        blackPawns := !blackPawns land (!blackPawns - one)
+      done
+    else failwith "Why did we not evaluate previously?";
+    Hashtbl.add pawnTable.(Board.white) !whitePawns !whiteScore;
+    Hashtbl.add pawnTable.(Board.black) !blackPawns !blackScore;
+    Stdlib.( - ) !whiteScore !blackScore
+
 let eval board =
-  let whiteMid = ref 0 in
-  let whiteEnd = ref 0 in
-  let blackMid = ref 0 in
-  let blackEnd = ref 0 in
+  let midScore = ref 0 in
+  let endScore = ref 0 in
   let gamePhase = ref 0 in
+  let result = ref 0 in
+  let adjustMaterial = [| 0; 0 |] in
+  let counts =
+    [| [| 0; 0 |]; [| 0; 0 |]; [| 0; 0 |]; [| 0; 0 |]; [| 0; 0 |]; [| 0; 0 |] |]
+  in
   for rank = 0 to 7 do
     for file = 0 to 7 do
       let piece = Board.get_piece board (rank, file) in
@@ -172,78 +370,100 @@ let eval board =
       | None -> ()
       | Some x ->
           let pieceType = (x land 7) - 1 in
-          gamePhase := !gamePhase + gamephaseInc.(pieceType);
-          if x land 8 = 8 then (
-            whiteMid :=
-              !whiteMid + pieceValuesMid.(pieceType)
+          let color = (x land 8) lsr 3 in
+          if color = 1 then (
+            midScore :=
+              !midScore + pieceValuesMid.(pieceType)
               + midTable.(pieceType).(rank).(file);
-            whiteEnd :=
-              !whiteEnd + pieceValuesEnd.(pieceType)
+            endScore :=
+              !endScore + pieceValuesEnd.(pieceType)
               + endTable.(pieceType).(rank).(file))
           else (
-            blackMid :=
-              !blackMid + pieceValuesMid.(pieceType)
-              + midTable.(pieceType).(7 - rank).(file);
-            blackEnd :=
-              !blackEnd + pieceValuesEnd.(pieceType)
-              + midTable.(pieceType).(7 - rank).(file))
+            midScore :=
+              !midScore - pieceValuesMid.(pieceType)
+              - midTable.(pieceType).(7 - rank).(file);
+            endScore :=
+              !endScore - pieceValuesEnd.(pieceType)
+              - midTable.(pieceType).(7 - rank).(file));
+          counts.(pieceType).(color) <- counts.(pieceType).(color) + 1;
+          gamePhase := !gamePhase + gamephaseInc.(pieceType)
     done
   done;
+  let whiteKingShield = wkingShield board in
+  let blackKingShield = bkingShield board in
+  let pawnScore = pawnScore board in
   let midPhase = if !gamePhase > 24 then 24 else !gamePhase in
   let endPhase = 24 - midPhase in
-  float_of_int
-    (((!whiteMid - !blackMid) * midPhase) - ((!whiteEnd - !blackEnd) * endPhase))
-  /. 24.
+  if counts.(Board.bishop).(Board.white) > 1 then
+    adjustMaterial.(Board.white) <- adjustMaterial.(Board.white) + bishopPair
+  else if counts.(Board.bishop).(Board.black) > 1 then
+    adjustMaterial.(Board.black) <- adjustMaterial.(Board.black) + bishopPair
+  else if counts.(Board.knight).(Board.white) > 1 then
+    adjustMaterial.(Board.white) <- adjustMaterial.(Board.white) - knightPair
+  else if counts.(Board.knight).(Board.black) > 1 then
+    adjustMaterial.(Board.black) <- adjustMaterial.(Board.black) - knightPair
+  else if counts.(Board.rook).(Board.white) > 1 then
+    adjustMaterial.(Board.white) <- adjustMaterial.(Board.white) - rookPair
+  else if counts.(Board.rook).(Board.black) > 1 then
+    adjustMaterial.(Board.black) <- adjustMaterial.(Board.black) - rookPair
+  else ();
+  midScore := !midScore + whiteKingShield - blackKingShield;
+  result := if Board.current_turn board = 0 then !result + 10 else !result - 10;
+  result := !result + pawnScore;
+  result := !result + (((!midScore * midPhase) - (!endScore * endPhase)) / 24);
+  result := !result + adjustMaterial.(0) - adjustMaterial.(1);
+  !result
 
-(**[search_all_captures alpha beta board] searches through positions where only
-   captures are available. *)
+(** [search_all_captures alpha beta board] searches through positions where only
+    captures are available. *)
 let rec search_all_captures alpha beta board =
   let evaluation = eval board in
   if evaluation >= beta then beta
   else
-    let alpha' = ref (Float.max alpha evaluation) in
+    let alpha' = ref (max alpha evaluation) in
     let movesList = Board.legal_moves board in
     if Base.Queue.is_empty movesList then
-      if Board.player_check board then min_float else 0.
+      if Board.player_check board then min_int else 0
     else
       try
-        for x = 0 to Base.Queue.length movesList do
+        for x = 0 to Base.Queue.length movesList - 1 do
           let move = Base.Queue.get movesList x in
           ignore (Board.make_move board move);
           let evaluation =
-            -1. *. search_all_captures (-1. *. beta) (-1. *. !alpha') board
+            -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
           in
+          ignore (Board.unmake_move board move);
           if evaluation >= beta then (
             alpha' := beta;
             failwith "")
-          else alpha' := Float.max !alpha' evaluation
+          else alpha' := max !alpha' evaluation
         done;
         !alpha'
       with _ -> !alpha'
 
-(**[search searchDepth alpha beta board] searches for the best move and returns
-   the evaluation of the best move available. *)
+(** [search searchDepth alpha beta board] searches for the best move and returns
+    the evaluation of the best move available. *)
 let rec search searchDepth alpha beta board =
   if searchDepth = 0 then search_all_captures alpha beta board
   else
     let movesList = Board.legal_moves board in
     if Base.Queue.length movesList = 0 then
-      if Board.player_check board then min_float else 0.
+      if Board.player_check board then min_int else 0
     else
-      let return = ref 0. in
+      let return = ref alpha in
       let alpha' = ref alpha in
       try
-        for x = 0 to Base.Queue.length movesList do
+        for x = 0 to Base.Queue.length movesList - 1 do
           let move = Base.Queue.get movesList x in
           ignore (Board.make_move board move);
           let evaluation =
-            -1. *. search (searchDepth - 1) (-1. *. beta) (-1. *. !alpha') board
+            -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
           in
           ignore (Board.unmake_move board move);
           if evaluation >= beta then (
             return := beta;
             failwith "")
-          else alpha' := Float.max !alpha' evaluation
+          else alpha' := max !alpha' evaluation
         done;
         !return
       with _ -> !return
@@ -253,11 +473,11 @@ let get_move board =
   if Base.Queue.is_empty movesList then failwith "No Legal Move"
   else
     let best_move = ref (Base.Queue.get movesList 0) in
-    let best_eval = ref neg_infinity in
+    let best_eval = ref min_int in
     for i = 0 to Base.Queue.length movesList - 1 do
       let move = Base.Queue.get movesList i in
       ignore (Board.make_move board move);
-      let eval = -.search (depth - 1) neg_infinity infinity board in
+      let eval = -1 * search (depth - 1) min_int max_int board in
       ignore (Board.unmake_move board move);
       if eval > !best_eval then (
         best_eval := eval;
