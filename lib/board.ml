@@ -94,8 +94,60 @@ let boardCopy board =
 
 let current_turn board = board.turn
 
-let make_board board turn moves castlingRights enPassant =
+let make_board1 board turn moves castlingRights enPassant =
   { board; turn; castlingRights; enPassant }
+
+let empty_board () : Int64.t array array =
+  Array.init 6 ~f:(fun _ -> Array.create ~len:2 Int64.zero)
+  
+let piece_index = function
+  | 'p' | 'P' -> 0
+  | 'n' | 'N' -> 1
+  | 'b' | 'B' -> 2
+  | 'r' | 'R' -> 3
+  | 'q' | 'Q' -> 4
+  | 'k' | 'K' -> 5
+  | _ -> -1
+
+let color_index c = if Stdlib.(Char.uppercase_ascii c = c) then 0 else 1
+  
+  
+let make_board2 fen : t =
+  let board = empty_board () in
+  let parts = String.split fen ~on:' ' in
+  let rows = String.split (List.nth_exn parts 0) ~on:'/' in
+  List.iteri rows ~f:(fun rank_rev row ->
+    let file = ref 0 in String.iter row ~f:(fun c ->
+      if Char.is_digit c then
+        file := !file + (Char.to_int c - Char.to_int '0')
+        else
+          let pi = piece_index c in
+          let ci = color_index c in
+          let rank = 7 - rank_rev in
+          let bit = tuple_to_bit (rank, !file) in
+          board.(pi).(ci) <- Int64.bit_or board.(pi).(ci) bit;
+          Int.incr file
+      )
+    );
+    let turn = if String.equal (List.nth_exn parts 1) "w" then 0 else 1 in
+    let castlingRights =
+      let cstr = List.nth_exn parts 2 in
+      let bit = ref 0 in
+      if String.contains cstr 'k' then bit := !bit lor 0b1000;
+      if String.contains cstr 'q' then bit := !bit lor 0b0100;
+      if String.contains cstr 'K' then bit := !bit lor 0b0010;
+      if String.contains cstr 'Q' then bit := !bit lor 0b0001;
+      !bit
+    in
+    let enPassant =
+      match List.nth_exn parts 3 with
+      | "-" -> Int64.zero
+      | ep ->
+        let file = Char.to_int ep.[0] - Char.to_int 'a' in
+        let rank = Char.to_int ep.[1] - Char.to_int '1' in
+        tuple_to_bit (rank, file)
+    in
+    { board; turn; castlingRights; enPassant }
 
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
