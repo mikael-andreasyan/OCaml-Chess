@@ -1,5 +1,3 @@
-open Piece
-
 type t
 (**A persistent type that represents a board. It contains the board
    representation, current player color, and number of moves played.*)
@@ -22,26 +20,37 @@ val legal_moves : t -> ((int * int) * (int * int)) Base.Queue.t
    board. *)
 
 val legal_moves_bishop : t -> ((int * int) * (int * int)) Base.Queue.t
+(**[legal_moves_bishop board] is a list of all legal moves that can be done by
+   bishopes on a given board. *)
+
 val legal_moves_rook : t -> ((int * int) * (int * int)) Base.Queue.t
+(**[legal_moves_rook board] is a list of all legal moves that can be done by
+   rooks on a given board. *)
+
 val legal_moves_queen : t -> ((int * int) * (int * int)) Base.Queue.t
+(**[legal_moves_queen board] is a list of all legal moves that can be done by
+   queens on a given board. *)
+
 val legal_moves_king : t -> ((int * int) * (int * int)) Base.Queue.t
-val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
+(**[legal_moves_king board] is a list of all legal moves that can be done by
+   queens on a given board. *)
 
-val make_move : t -> (int * int) * (int * int) -> bool * t
-(**[make_move board (file_st, rank_st) (file_end, rank_end)] attempts to move
-   the piece at [file_st, rank_st] to [file_end, rank_end]. If the movement is
-   illegal, then the function returns false and makes no changes to the board.
-   Otherwise, it mutates the current board to represent the move, changes board
-   state, and advances the turn. Requires: [file_st, rank_st] and
-   [file_end, rank_end] are valid positions on a chess board. For this function,
-   the numbers 0-7 represent the letters a-h. Returns: a tuple with the first
-   entry as the board (unchanged if move was invalid) and a boolean that says if
-   the move was invalid*)
+val make_move : t -> (int * int) * (int * int) -> bool
+(**[make_move board ((rank1, file1), (rank2, file2))] attempts to move the piece
+   at [rank1, rank_st] to [rank2, file2]. If the movement is illegal, then the
+   function returns false and makes no changes to the board. Otherwise, it
+   mutates the current board to represent the move, changes board state, and
+   advances the turn. Requires: [rank1, file1] and [rank2, file2] are valid
+   positions on a chess board. For this function, the numbers 0-7 represent the
+   letters a-h. Returns: a tuple with the first entry as the board (unchanged if
+   move was invalid) and a boolean that says if the move was invalid*)
 
-(* val unmake_move : t -> (int * int) * (int * int) -> bool * t *)
-
-val printerBoard : t -> string
-(**[printer board] prints out a string of the board.*)
+val unmake_move : t -> (int * int) * (int * int) -> bool
+(**[make_move board ((rank1, file1), (rank2, file2))] attempts to unmake a move.
+   Requires: [rank1, file1] and [rank2, file2] are valid positions on a chess
+   board. For this function, the numbers 0-7 represent the letters a-h. Returns:
+   a tuple with the first entry as the board (unchanged if move was invalid) and
+   a boolean that says if the move was invalid*)
 
 val get_piece : t -> int * int -> int option
 (**[get_piece board (rank, file)] gives the piece at the selected rank and file.
@@ -52,3 +61,12 @@ val get_piece : t -> int * int -> int option
 
    Here is a key: Pawn = 001, Knight = 010, Bishop = 011, Rook = 100, Queen =
    101, King = 110.*)
+
+val player_check : t -> bool
+(**[player_check board] checks if the current player on hte board is in check.*)
+
+val printerMoveList : ((int * int) * (int * int)) Base.Queue.t -> unit
+(**[printerMoveList moveList] is a printed version of the entire board.*)
+
+val printerBoard : t -> string
+(**[printer board] prints out a string of the board.*)
