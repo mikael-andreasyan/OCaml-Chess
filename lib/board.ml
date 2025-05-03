@@ -52,7 +52,6 @@ let castleFree =
   |]
 
 (*Indices for the piece and colortypes.*)
-
 let pawn = 0
 let knight = 1
 let bishop = 2
@@ -110,8 +109,7 @@ let piece_index = function
   | _ -> -1
 
 let color_index c = if Stdlib.(Char.uppercase_ascii c = c) then 0 else 1
-  
-  
+
 let make_board2 fen : t =
   let board = empty_board () in
   let parts = String.split fen ~on:' ' in
@@ -163,8 +161,6 @@ let get_piece board (rank, file) =
 
 let get_piece_bitBoard board pieceType color = board.board.(pieceType).(color)
 
-(**[legal_moves_pawn board] is a list of all legal pawn moves.*)
-
 let legal_moves_pawn board (rank, file) : move array =
   let open Int64 in
   let ans = Array.create ~len:maxLegalMoves ((0,0),(0,0), None) in
@@ -193,18 +189,53 @@ let legal_moves_pawn board (rank, file) : move array =
     else
     let newPos1 = shift_left pawnBit 1 in 
     if Stdlib.(=) file 6 && newPos1 land (me_occ land opp_occ) = zero then 
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some 1); 
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some knight); 
       index := Stdlib.(+) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some 2); 
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some rook); 
       index := Stdlib.(+) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some 3); 
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some queen); 
       index := Stdlib.(+) !index 1;
     let newPos2 = shift_left pawnBit 2 in
     if Stdlib.(=) file 1 && newPos2 land (me_occ land opp_occ) = zero then  
     Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some 1); 
     index := Stdlib.(+) !index 1;
-    (**Enpassant*)
-  ans
+    if Stdlib.(=) board.turn white then (
+      if Stdlib.(=) file 4 && 
+         ((shift_left pawnBit 9) land (shift_right_logical pawnBit 7) land board.enPassant = zero) 
+      then 
+        ()
+      else (
+        if ((shift_right_logical pawnBit 7) land board.enPassant <> zero) then (
+          Base.Array.set ans !index ((rank, file), bit_to_tuple 
+        ((shift_right_logical pawnBit 7) land board.enPassant), Some 3);
+          index := Stdlib.(+) !index 1
+        ) else if ((shift_left pawnBit 9) land board.enPassant <> zero) then (
+          Base.Array.set ans !index ((rank, file), bit_to_tuple 
+        ((shift_left pawnBit 9) land board.enPassant), Some 3);
+          index := Stdlib.(+) !index 1
+        ) else 
+          ()
+      )
+    ) else if Stdlib.(=) board.turn black then 
+      if Stdlib.(=) file 3 && 
+        ((shift_left pawnBit 7) land (shift_right_logical pawnBit 9) land board.enPassant = zero) 
+     then 
+       ()
+     else (
+       if ((shift_right_logical pawnBit 9) land board.enPassant <> zero) then (
+         Base.Array.set ans !index ((rank, file), bit_to_tuple 
+       ((shift_right_logical pawnBit 9) land board.enPassant), Some 3);
+         index := Stdlib.(+) !index 1
+       ) else if ((shift_left pawnBit 7) land board.enPassant <> zero) then (
+         Base.Array.set ans !index ((rank, file), bit_to_tuple 
+       ((shift_left pawnBit 7) land board.enPassant), Some 3);
+         index := Stdlib.(+) !index 1
+       ) else 
+         ()
+     )
+    else 
+      ();
+    ans
 
 let legal_moves_knight board (rank, file) : move array =
   let open Int64 in
@@ -337,11 +368,8 @@ let legal_moves_rook board (rank, file) : move array =
 
   let rookBit = tuple_to_bit (rank, file) in
   if rookBit land board.board.(rook).(board.turn) = zero then failwith "Not a valid rook move" else
-
-
   let shift1 = sliding_compass.(0) in
   let shift2 = sliding_compass.(1) in
-
   let border1 = if Stdlib.( = ) shift1 1 then file1 else zero
   and border2 = if Stdlib.( = ) shift1 1 then file8 else zero
   and border3 = if Stdlib.( = ) shift2 1 then file1 else zero
@@ -739,9 +767,9 @@ let printerBoard board =
   done;
   !boardString
 
-  let printerMoveList (movelist : move Base.Array.t) =
-    Array.iter movelist ~f:(fun ((x1, y1), (x2, y2), promo_opt) ->
-      match promo_opt with
-      | Some p -> Stdlib.Printf.printf "From (%d, %d) to (%d, %d), promote to %d\n" x1 y1 x2 y2 p
-      | None -> Stdlib.Printf.printf "From (%d, %d) to (%d, %d)\n" x1 y1 x2 y2)
+let printerMoveList (movelist : move Base.Array.t) =
+  Array.iter movelist ~f:(fun ((x1, y1), (x2, y2), promo_opt) ->
+    match promo_opt with
+    | Some p -> Stdlib.Printf.printf "From (%d, %d) to (%d, %d), promote to %d\n" x1 y1 x2 y2 p
+    | None -> Stdlib.Printf.printf "From (%d, %d) to (%d, %d)\n" x1 y1 x2 y2)
   
