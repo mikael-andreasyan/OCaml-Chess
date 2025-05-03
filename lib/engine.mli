@@ -8,7 +8,7 @@ val depth : int
    moves the chess engine explores and the lower the depth, the less moves the
    chess engine explores.*)
 
-val get_move : Board.t -> (int * int) * (int * int)
+val get_move : Board.t -> Board.move
 (**[get_move board color] is a tuple of 2 pairs of ints that hold the starting
    posistion of the piece that we want to move and the ending posistion we want
    to move the piece to.*)

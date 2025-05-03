@@ -494,8 +494,8 @@ let movesArray =
     legal_moves_king;
   |]
 
-let make_move board ((rank1, file1), ((rank2 : int), (file2 : int))) = true
-let unmake_move board ((rank1, file1), ((rank2 : int), (file2 : int))) = true
+let make_move board ((rank1, file1), (rank2, file2), option) = true
+let unmake_move board ((rank1, file1), (rank2, file2), option) = true
 let legal_moves board =   
   let open Int64 in
   let ans = Array.create ~len:maxLegalMoves ((0,0),(0,0), None) in

@@ -422,12 +422,12 @@ let rec search_all_captures alpha beta board =
   else
     let alpha' = ref (max alpha evaluation) in
     let movesList = Board.legal_moves board in
-    if Base.Queue.is_empty movesList then
-      if Board.player_check board then min_int else 0
+    if Base.Array.is_empty movesList then
+      if Board.player_check board (Board.current_turn board) then min_int else 0
     else
       try
-        for x = 0 to Base.Queue.length movesList - 1 do
-          let move = Base.Queue.get movesList x in
+        for x = 0 to Base.Array.length movesList - 1 do
+          let move = Base.Array.get movesList x in
           ignore (Board.make_move board move);
           let evaluation =
             -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
@@ -447,14 +447,14 @@ let rec search searchDepth alpha beta board =
   if searchDepth = 0 then search_all_captures alpha beta board
   else
     let movesList = Board.legal_moves board in
-    if Base.Queue.length movesList = 0 then
-      if Board.player_check board then min_int else 0
+    if Base.Array.length movesList = 0 then
+      if Board.player_check board (Board.current_turn board) then min_int else 0
     else
       let return = ref alpha in
       let alpha' = ref alpha in
       try
-        for x = 0 to Base.Queue.length movesList - 1 do
-          let move = Base.Queue.get movesList x in
+        for x = 0 to Base.Array.length movesList - 1 do
+          let move = Base.Array.get movesList x in
           ignore (Board.make_move board move);
           let evaluation =
             -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
@@ -470,12 +470,12 @@ let rec search searchDepth alpha beta board =
 
 let get_move board =
   let movesList = Board.legal_moves board in
-  if Base.Queue.is_empty movesList then failwith "No Legal Move"
+  if Base.Array.is_empty movesList then failwith "No Legal Move"
   else
-    let best_move = ref (Base.Queue.get movesList 0) in
+    let best_move = ref (Base.Array.get movesList 0) in
     let best_eval = ref min_int in
-    for i = 0 to Base.Queue.length movesList - 1 do
-      let move = Base.Queue.get movesList i in
+    for i = 0 to Base.Array.length movesList - 1 do
+      let move = Base.Array.get movesList i in
       ignore (Board.make_move board move);
       let eval = -1 * search (depth - 1) min_int max_int board in
       ignore (Board.unmake_move board move);
