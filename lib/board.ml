@@ -247,23 +247,32 @@ let legal_moves_knight board (rank, file) : move array =
       let shift = knight_compass.(shift_index) in
       let newPos = shift_left knightBit shift in
       let border =
-        if Stdlib.( < ) shift_index 1 then file1 land shift_left file1 1
-        else file8 land shift_right_logical file8 1
+        if Stdlib.( = ) shift 6 then file8 lor shift_right_logical file8 1
+        else if Stdlib.( = ) shift 15 then file8
+        else if Stdlib.( = ) shift 17 then file1
+        else file1 lor shift_left file1 1
       in
-      if newPos land me_occ = zero && newPos land border = zero then ()
-      else Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
-      index := Stdlib.( + ) !index 1
+      if
+        newPos land me_occ = zero && newPos land border = zero && newPos <> zero
+      then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
+        index := Stdlib.( + ) !index 1)
+      else ()
     done;
-  for shift_index = 0 to 4 do
+  for shift_index = 0 to 3 do
     let shift = knight_compass.(shift_index) in
     let newPos = shift_right_logical knightBit shift in
     let border =
-      if Stdlib.( < ) shift_index 1 then file8 land shift_right_logical file8 1
-      else file1 land shift_left file1 1
+      if Stdlib.( = ) shift 6 then file1 lor shift_left file1 1
+      else if Stdlib.( = ) shift 15 then file1
+      else if Stdlib.( = ) shift 17 then file8
+      else file8 lor shift_right_logical file8 1
     in
-    if newPos land me_occ = zero && newPos land border = zero then ()
-    else Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
-    index := Stdlib.( + ) !index 1
+    if newPos land me_occ = zero && newPos land border = zero && newPos <> zero
+    then (
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
+      index := Stdlib.( + ) !index 1)
+    else ()
   done;
   ans
 

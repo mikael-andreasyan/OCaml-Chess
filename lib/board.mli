@@ -37,6 +37,10 @@ val legal_moves : t -> move Base.Array.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
    board. *)
 
+val legal_moves_knight : t -> int * int -> move Base.Array.t
+(**[legal_moves_knight board (rank, file)] is a list of all legal moves that can
+   be done by knights on a given board and with a given knight. *)
+
 val legal_moves_bishop : t -> int * int -> move Base.Array.t
 (**[legal_moves_bishop board (rank, file)] is a list of all legal moves that can
    be done by bishopes on a given board and with a given bishop. *)
