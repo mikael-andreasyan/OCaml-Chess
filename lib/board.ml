@@ -579,13 +579,13 @@ let legal_moves_king board (rank, file) : move array =
     if Stdlib.( = ) board.turn white then
       if
         castleFree.(white).(0) land (me_occ land opp_occ) = zero
-        && Stdlib.( >= ) board.castlingRights 1
+        && Stdlib.(board.castlingRights land 1 <> 0)
       then (
         Base.Array.set ans !index ((rank, file), (0, 7), None);
         index := Stdlib.( + ) !index 1;
         if
           castleFree.(white).(1) land (me_occ land opp_occ) = zero
-          && Stdlib.( >= ) board.castlingRights 2
+          && Stdlib.(board.castlingRights land 2 <> 0)
         then (
           Base.Array.set ans !index ((rank, file), (0, 0), None);
           index := Stdlib.( + ) !index 1)
@@ -594,13 +594,13 @@ let legal_moves_king board (rank, file) : move array =
     else if Stdlib.( = ) board.turn black then
       if
         castleFree.(black).(0) land (me_occ land opp_occ) = zero
-        && Stdlib.( >= ) board.castlingRights 4
+        && Stdlib.(board.castlingRights land 4 <> 0)
       then (
         Base.Array.set ans !index ((rank, file), (7, 7), None);
         index := Stdlib.( + ) !index 1;
         if
           castleFree.(black).(1) land (me_occ land opp_occ) = zero
-          && Stdlib.( >= ) board.castlingRights 8
+          && Stdlib.(board.castlingRights land 8 <> 0)
         then (
           Base.Array.set ans !index ((rank, file), (7, 0), None);
           index := Stdlib.( + ) !index 1)
