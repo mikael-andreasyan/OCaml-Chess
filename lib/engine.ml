@@ -432,7 +432,7 @@ let rec search_all_captures alpha beta board =
           let evaluation =
             -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
           in
-          ignore (Board.unmake_move board move);
+          Board.unmake_move board;
           if evaluation >= beta then (
             alpha' := beta;
             failwith "")
@@ -459,7 +459,7 @@ let rec search searchDepth alpha beta board =
           let evaluation =
             -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
           in
-          ignore (Board.unmake_move board move);
+          Board.unmake_move board;
           if evaluation >= beta then (
             return := beta;
             failwith "")
@@ -478,7 +478,7 @@ let get_move board =
       let move = Base.Array.get movesList i in
       ignore (Board.make_move board move);
       let eval = -1 * search (depth - 1) min_int max_int board in
-      ignore (Board.unmake_move board move);
+      Board.unmake_move board;
       if eval > !best_eval then (
         best_eval := eval;
         best_move := move)

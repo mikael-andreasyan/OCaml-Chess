@@ -76,7 +76,7 @@ let tuple_to_bit (rank, file) =
 
 let current_turn board = board.turn
 
-let make_board1 board turn moves castlingRights enPassant =
+let make_board1 board turn castlingRights enPassant =
   { board; turn; castlingRights; enPassant }
 
 let empty_board () : Int64.t array array =
@@ -132,14 +132,18 @@ let make_board2 fen : t =
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
   let return = ref None in
-  for piece = pawn to king do
-    for color = 0 to 1 do
-      if Int64.(equal (bit_and board.board.(piece).(color) bit) Int64.zero) then
-        ()
-      else return := Some (piece + 1 + colorsArray.(color))
-    done
-  done;
-  !return
+  try
+    for piece = pawn to king do
+      for color = 0 to 1 do
+        if Int64.(equal (bit_and board.board.(piece).(color) bit) Int64.zero)
+        then ()
+        else (
+          return := Some (piece + 1 + colorsArray.(color));
+          failwith "fast exit")
+      done
+    done;
+    !return
+  with _ -> !return
 
 let get_piece_bitBoard board pieceType color = board.board.(pieceType).(color)
 
@@ -543,28 +547,34 @@ let legal_moves_king board (rank, file) : move array =
     failwith "Not a valid king move"
   else (
     for shift_index = 0 to 3 do
-      let shift = knight_compass.(shift_index) in
+      let shift = sliding_compass.(shift_index) in
       let newPos = shift_left kingBit shift in
       let border =
-        if Stdlib.( = ) shift 8 then zero
+        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then file1
         else if Stdlib.( = ) shift 7 then file8
-        else file1
+        else zero
       in
-      if newPos land me_occ = zero && newPos land border = zero then ()
-      else Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
-      index := Stdlib.( + ) !index 1
+      if
+        newPos land me_occ = zero && newPos land border = zero && newPos <> zero
+      then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
+        index := Stdlib.( + ) !index 1)
+      else ()
     done;
-    for shift_index = 0 to 4 do
-      let shift = knight_compass.(shift_index) in
+    for shift_index = 0 to 3 do
+      let shift = sliding_compass.(shift_index) in
       let newPos = shift_right_logical kingBit shift in
       let border =
-        if Stdlib.( = ) shift 8 then zero
+        if Stdlib.( = ) shift 9 || Stdlib.( = ) shift 1 then file8
         else if Stdlib.( = ) shift 7 then file1
-        else file8
+        else zero
       in
-      if newPos land me_occ = zero && newPos land border = zero then ()
-      else Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
-      index := Stdlib.( + ) !index 1
+      if
+        newPos land me_occ = zero && newPos land border = zero && newPos <> zero
+      then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
+        index := Stdlib.( + ) !index 1)
+      else ()
     done;
     if Stdlib.( = ) board.turn white then
       if
@@ -572,27 +582,30 @@ let legal_moves_king board (rank, file) : move array =
         && Stdlib.( >= ) board.castlingRights 1
       then (
         Base.Array.set ans !index ((rank, file), (0, 7), None);
-        index := Stdlib.( + ) !index 1)
-      else if
-        castleFree.(white).(1) land (me_occ land opp_occ) = zero
-        && Stdlib.( >= ) board.castlingRights 2
-      then (
-        Base.Array.set ans !index ((rank, file), (0, 0), None);
-        index := Stdlib.( + ) !index 1)
-      else if Stdlib.( = ) board.turn black then
+        index := Stdlib.( + ) !index 1;
         if
-          castleFree.(black).(0) land (me_occ land opp_occ) = zero
-          && Stdlib.( >= ) board.castlingRights 4
+          castleFree.(white).(1) land (me_occ land opp_occ) = zero
+          && Stdlib.( >= ) board.castlingRights 2
         then (
-          Base.Array.set ans !index ((rank, file), (7, 7), None);
+          Base.Array.set ans !index ((rank, file), (0, 0), None);
           index := Stdlib.( + ) !index 1)
-        else if
+        else ())
+      else ()
+    else if Stdlib.( = ) board.turn black then
+      if
+        castleFree.(black).(0) land (me_occ land opp_occ) = zero
+        && Stdlib.( >= ) board.castlingRights 4
+      then (
+        Base.Array.set ans !index ((rank, file), (7, 7), None);
+        index := Stdlib.( + ) !index 1;
+        if
           castleFree.(black).(1) land (me_occ land opp_occ) = zero
           && Stdlib.( >= ) board.castlingRights 8
         then (
           Base.Array.set ans !index ((rank, file), (7, 0), None);
           index := Stdlib.( + ) !index 1)
-        else ();
+        else ())
+      else ();
     ans)
 
 let movesArray =
@@ -606,7 +619,7 @@ let movesArray =
   |]
 
 let make_move board ((rank1, file1), (rank2, file2), option) = true
-let unmake_move board ((rank1, file1), (rank2, file2), option) = true
+let unmake_move board = ()
 
 let legal_moves board =
   let open Int64 in

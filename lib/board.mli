@@ -24,9 +24,9 @@ val current_turn : t -> int
 (**[current_turn board] returns the color's turn it currently is. 0 stands for
    white and 1 stands for black. *)
 
-val make_board1 : int64 array array -> int -> int -> int -> int64 -> t
-(**[make_board1 board turn moves castlingRights enPassant] is a new board with
-   the given values.*)
+val make_board1 : int64 array array -> int -> int -> int64 -> t
+(**[make_board1 board turn castlingRights enPassant] is a new board with the
+   given values.*)
 
 val make_board2 : string -> t
 (**[make_board2 fen] is a new board with the given fen string.
@@ -67,7 +67,7 @@ val make_move : t -> move -> bool
    letters a-h. Returns: a tuple with the first entry as the board (unchanged if
    move was invalid) and a boolean that says if the move was invalid*)
 
-val unmake_move : t -> move -> bool
+val unmake_move : t -> unit
 (**[make_move board ((rank1, file1), (rank2, file2))] attempts to unmake a move.
    Requires: [rank1, file1] and [rank2, file2] are valid positions on a chess
    board. For this function, the numbers 0-7 represent the letters a-h. Returns:
