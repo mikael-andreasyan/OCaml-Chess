@@ -37,6 +37,10 @@ val legal_moves : t -> move Base.Array.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
    board. *)
 
+val legal_moves_pawn : t -> int * int -> move Base.Array.t
+(**[legal_moves_pawn board (rank, file)] is a list of all legal moves that can
+   be done by pawns on a given board and with a given pawn. *)
+
 val legal_moves_knight : t -> int * int -> move Base.Array.t
 (**[legal_moves_knight board (rank, file)] is a list of all legal moves that can
    be done by knights on a given board and with a given knight. *)
@@ -103,5 +107,5 @@ val player_check : t -> int -> bool
 val printerMoveList : move Base.Array.t -> unit
 (**[printerMoveList moveList] is a printed version of the entire board.*)
 
-val printerBoard : t -> string
+val printerBoard : t -> unit
 (**[printer board] prints out a string of the board.*)
