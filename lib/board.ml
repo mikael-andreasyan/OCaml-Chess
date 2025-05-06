@@ -7,7 +7,7 @@ type t = {
   mutable turn : int;
   mutable castlingRights : int;
   mutable enPassant : int64;
-  mutable moveList : move Queue.t;
+  mutable moveList : move Stack.t;
 }
 (**AF: the board is represented by 6 two dimensional arrays of 64 bit ints from
    Jane Street's base library. The first index associates itself with a piece
@@ -78,7 +78,7 @@ let tuple_to_bit (rank, file) =
 let current_turn board = board.turn
 
 let make_board1 board turn castlingRights enPassant =
-  { board; turn; castlingRights; enPassant; moveList = Queue.create () }
+  { board; turn; castlingRights; enPassant; moveList = Stack.create () }
 
 let empty_board () : Int64.t array array =
   Array.init 6 ~f:(fun _ -> Array.create ~len:2 Int64.zero)
@@ -128,7 +128,7 @@ let make_board2 fen : t =
         let rank = Char.to_int ep.[1] - Char.to_int '1' in
         tuple_to_bit (rank, file)
   in
-  { board; turn; castlingRights; enPassant; moveList = Queue.create () }
+  { board; turn; castlingRights; enPassant; moveList = Stack.create () }
 
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
