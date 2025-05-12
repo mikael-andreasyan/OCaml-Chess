@@ -1,70 +1,185 @@
-(* open Chess
+open Graphics
+open Chess
 
-   let board = Board.make_board ()
+(**color definitions*)
 
-   (**regex exlusively matches only string that fufill chess notation*) let rec
-   validInput input = let valid_pattern = Str.regexp "^[a-h][1-8]$" in try let _
-   = Str.search_forward valid_pattern input 0 in let input = Str.matched_string
-   input in input with Not_found -> let () = print_endline "Your input was
-   invalid. Please try again using standard chess\n\ \ notation and only
-   lowercase letters" in validInput (read_line ())
+let dark = 0x5f8522
+let light = 0xd7db98
+let dark_draw = black
+let light_draw = 0xf9f6f2
+let select = 0x92dae8
 
-   (*Prompts the user with an input and returns a string*) let get_input () =
-   validInput (read_line ())
+let board =
+  Board.make_board2 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-   let piece_symbol piece_type = match piece_type with | Piece.Rook -> " R " |
-   Piece.Bishop -> " B " | Piece.Knight -> " H " | Piece.Queen -> " Q " |
-   Piece.King -> " K " | Piece.Pawn -> " p "
+(**a collection of functions that draw the pieces as representations of basic
+   shapes. All follow the same format of [draw_piece offset length (r,f) color],
+   where the [offset] is how far the board is drawn from the corner of the
+   screen, [length] is the length of each tile, [r,f] is the rank and file of
+   the piece and [color] is the color of the piece*)
 
-   let print_file () = ANSITerminal.print_string [ ANSITerminal.white;
-   ANSITerminal.on_black ] "---------------------------\n a b c d e f g h ";
-   print_newline ()
+let draw_pawn offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 4))
+    (length / 2) (length / 2)
 
-   (**Turns the first character of chess notation into a num. Requires: the
-   first letter was already valid chess notation*) let get_file char = match
-   char with | 'a' -> 0 | 'b' -> 1 | 'c' -> 2 | 'd' -> 3 | 'e' -> 4 | 'f' -> 5 |
-   'g' -> 6 | 'h' -> 7 | _ -> raise (Sys_error "something went wrong")
+let draw_knight offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 8))
+    (length / 4)
+    (length * 6 / 8);
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 2))
+    (length * 2 / 4)
+    (length * 1 / 4)
 
-   (**I found out that for some reason int_of_char returns the ascii value of
-   the character instead of the number. So i had to do this janky code*) let
-   get_rank rank = match rank with | '1' -> 0 | '2' -> 1 | '3' -> 2 | '4' -> 3 |
-   '5' -> 4 | '6' -> 5 | '7' -> 6 | '8' -> 7 | _ -> raise (Sys_error "something
-   went wrong")
+let draw_bish offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length * 3 / 8))
+    ((r * length) + (length / 8))
+    (length / 4)
+    (length * 3 / 5);
+  fill_circle
+    (offset_x + (f * length) + (length / 2))
+    ((r * length) + (length * 11 / 16))
+    (length / 4)
 
-   let print_board board = print_newline (); for r = 7 downto 0 do
-   ANSITerminal.print_string [ ANSITerminal.white; ANSITerminal.on_black ]
-   (string_of_int (r + 1) ^ " |"); for f = 0 to 7 do match Board.get_piece board
-   (f, r) with | None -> ANSITerminal.print_string [ ANSITerminal.white;
-   ANSITerminal.on_black ] " - " | Some piece -> ( match Piece.get_color piece
-   with | Piece.White -> ANSITerminal.print_string [ ANSITerminal.white;
-   ANSITerminal.on_black ] (piece_symbol (Piece.get_type piece)) | Piece.Black
-   -> ANSITerminal.print_string [ ANSITerminal.blue; ANSITerminal.on_black ]
-   (piece_symbol (Piece.get_type piece))) done; print_newline () done;
-   print_file (); print_newline ()
+let draw_rook offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 4))
+    (length / 2) (length / 3);
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 2))
+    (length / 6) (length / 4);
+  fill_rect
+    (offset_x + (f * length) + (length / 4) + (length / 3))
+    ((r * length) + (length / 2))
+    (length / 6) (length / 4)
 
-   (**Takes in a string representing chess notation*) let rec process_start
-   input board = let file = get_file input.[0] in let rank = get_rank input.[1]
-   in match Board.get_piece board (file, rank) with | Some piece -> if
-   Piece.get_color piece = Board.current_turn board then input else (
-   print_endline "This piece is not a piece you can move because it is not the
-   same \ color as the current player. Try another piece"; process_start
-   (get_input ()) board) | None -> print_endline "There is no piece here. Try
-   again"; process_start (get_input ()) board
+let draw_queen offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 8))
+    (length / 2) (length / 4);
+  let left_side_x = offset_x + (f * length) + (length / 4) in
+  let right_side_x = offset_x + ((f + 1) * length) - (length / 4) in
+  let mid_left_x = left_side_x + (length / 6) in
+  let mid_right_x = left_side_x + (length / 3) in
+  let bottom_y = (r * length) + (length * 3 / 8) in
+  let top_y = (r * length) + (length * 7 / 8) in
+  let points_array =
+    [|
+      (left_side_x, top_y);
+      (right_side_x, top_y);
+      (mid_right_x, bottom_y);
+      (mid_left_x, bottom_y);
+    |]
+  in
+  fill_poly points_array
 
-   let rec process_input p_start p_end board = let start_file = get_file
-   p_start.[0] in let start_rank = get_rank p_start.[1] in let end_file =
-   get_file p_end.[0] in let end_rank = get_rank p_end.[1] in Board.make_move
-   board (start_file, start_rank) (end_file, end_rank)
+let draw_king offset_x length (r, f) color =
+  set_color color;
+  fill_rect
+    (offset_x + (f * length) + (length / 4))
+    ((r * length) + (length / 8))
+    (length / 2) (length / 4);
+  let left_side_x = offset_x + (f * length) + (length / 4) in
+  let right_side_x = offset_x + ((f + 1) * length) - (length / 4) in
+  let mid_x = left_side_x + (length / 4) in
+  let bottom_y = (r * length) + (length * 3 / 8) in
+  let top_y = (r * length) + (length * 7 / 8) in
+  let points_array =
+    [| (mid_x, top_y); (left_side_x, bottom_y); (right_side_x, bottom_y) |]
+  in
+  fill_poly points_array
 
-   let rec loop board = print_board board; (let curr_player = Board.current_turn
-   board in match curr_player with | Piece.White -> print_endline "WHITE'S TURN"
-   | Piece.Black -> print_endline "BLACK'S TURN"); print_endline "Pick a piece
-   to move"; let start = get_input () in let start = process_start start board
-   in print_endline "Where do you want to move this piece?"; let p_end =
-   get_input () in if process_input start p_end board then () else print_endline
-   "Sorry but the piece you chose can't move like that. You either chose an \
-   invalid movement patten, your move was blocked by another piece, or you \
-   tried to eat a piece of your own color\n\ It's still the same player's turn,
-   please try again"; loop board
+(**an array that has the appropriate index matching to the piece type. The index
+   is based on the number that the piece is associated with in the get piece
+   function*)
+let draw_key =
+  [|
+    (fun _ _ _ _ -> ());
+    draw_pawn;
+    draw_knight;
+    draw_bish;
+    draw_rook;
+    draw_queen;
+    draw_king;
+  |]
 
-   let () = loop board *)
+(**[draw_piece_at (rank, file) offset_x length] draws the piece found at
+   [rank,file] of the board unto the screen. [offset_x] is how much the board
+   drawing is offset from the edge of the screen and [length] is the size of
+   each tile*)
+let draw_piece_at (rank, file) offset_x length =
+  match Board.get_piece board (rank, file) with
+  | Some piece ->
+      let color = if Int.logand piece 8 = 8 then light_draw else dark_draw in
+      let piece_num = if color = light_draw then piece - 8 else piece in
+      draw_key.(piece_num) offset_x length (rank, file) color
+  | None -> ()
+
+(**swaps the current color to the other color*)
+let swap_color color = if color = light then dark else light
+
+(**[draw_board location_x length] draws the board with the squares and pieces,
+   with [length] being the length of the tiles and [location_x] being the
+   starting point of the board on the x axis*)
+let draw_board location_x length =
+  let color = ref dark in
+  for r = 0 to 7 do
+    for c = 0 to 7 do
+      if c = 0 then () else color := swap_color !color;
+      set_color !color;
+      fill_rect (location_x + (r * length)) (c * length) length length;
+      draw_piece_at (c, r) location_x length
+    done
+  done
+
+(**[move_piece status] checks if the location where the user pressed to select a
+   piece was valid. Then, it'll make the piece follow the cursor of the player
+   until they select the place they want to put their piece.*)
+let rec move_piece status length start_x =
+  let piece_x_start = (status.mouse_x - start_x) / length in
+  let piece_y_start = status.mouse_y / length in
+  if
+    status.mouse_x < start_x
+    || status.mouse_x > start_x + (length * 8)
+    || Board.get_piece board (piece_y_start, piece_x_start) = None
+  then ()
+  else (
+    set_color select;
+    fill_rect
+      ((piece_x_start * length) + start_x)
+      (piece_y_start * length) length length;
+    let status_new = wait_next_event [ Button_down ] in
+    let _ = (status.mouse_x - start_x) / length in
+    let _ = status.mouse_y / length in
+    if false then () else draw_board start_x length;
+    move_piece status_new length start_x)
+
+let () =
+  open_graph "";
+  set_window_title "Le Critters Chess";
+  resize_window 1280 720;
+  while true do
+    let status = wait_next_event [ Button_down; Button_up ] in
+    let y = size_y () in
+    let x = size_x () in
+    let tile_length = y / 8 in
+    set_color black;
+    fill_rect 0 0 x y;
+    let location_x = (x - y) / 2 in
+    draw_board location_x tile_length;
+    if button_down () then move_piece status tile_length location_x else ()
+  done
