@@ -163,9 +163,13 @@ let rec move_piece status length start_x =
       ((piece_x_start * length) + start_x)
       (piece_y_start * length) length length;
     let status_new = wait_next_event [ Button_down ] in
-    let _ = (status.mouse_x - start_x) / length in
-    let _ = status.mouse_y / length in
-    if false then () else draw_board start_x length;
+    let piece_end_x = (status.mouse_x - start_x) / length in
+    let piece_end_y = status.mouse_y / length in
+    if
+      Board.make_move board
+        ((piece_end_y, piece_end_x), (piece_end_y, piece_end_x), None)
+    then ()
+    else draw_board start_x length;
     move_piece status_new length start_x)
 
 let () =

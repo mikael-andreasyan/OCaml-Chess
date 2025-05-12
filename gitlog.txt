@@ -1,0 +1,158 @@
+commit d7f0bdb3ca2f9374933f65df06e0ff841183c0f6
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Fri Mar 28 01:53:17 2025 -0400
+
+    Bug fixes and integration
+    
+    -Integrated some stuff
+    -Changed piece.ml to match interface
+    -Fixed bugs in board related to valid movement
+    -Updated user commandline interface
+
+commit abccef9f5af2f29b591e93f022e5ccff0b6391f1
+Author: Fanhao Yu <fy229@cornell.edu>
+Date:   Thu Mar 27 23:11:38 2025 -0400
+
+    Advanced command line inplementation
+
+commit fc577ee8b206c3ba3d19e967c87e50a1dc285c96
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Thu Mar 27 22:56:46 2025 -0400
+
+    The board is now mostly implemented
+    
+    -Checking for valid moves SHOULD work (can't fully test until commandline is done)
+
+commit 308a6596bbe3dfc2c6504d92372b898b1593c564
+Author: AndrewK <ajk345@cornell.edu>
+Date:   Thu Mar 27 21:35:08 2025 -0400
+
+    Implemented: piece movement
+
+commit 858836497d724f21f7bb23ff645ecaf45c4b607b
+Author: AndrewK <ajk345@cornell.edu>
+Date:   Wed Mar 26 13:29:44 2025 -0400
+
+    Andrew Kim REadme again
+
+commit d96b38472338fec4832c94ba90b6fcfa2f175c65
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Thu Mar 27 02:56:30 2025 -0400
+
+    Implemented basic version of moving on board
+    
+    -Changed mli to integrate the color of the piece and turn color
+    -The current implementation of move teleports the piece across the map
+
+commit 858f52feb35742cd3327af76de5dc7deaafdb836
+Author: Jason Guo <jhg294@cornell.edu>
+Date:   Thu Mar 27 01:53:09 2025 -0400
+
+    basic board printing implentation, basic input/information getting
+
+commit 1f2efb2ca8b8c0f61ad23b8157461dec65826c49
+Author: Andrew <arg286@cornell.edu>
+Date:   Thu Mar 27 01:31:24 2025 -0400
+
+    finised basic implementation of board with setting up, but make_move just returns true for now, no changes to the board
+
+commit 6d61c695066bda2220e47e91d55a23bf2a4bcfea
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 16:26:54 2025 -0400
+
+    Fixed piece.ml implementation (one of the args was flipped around)
+
+commit 37024a4bc3e95fb7286940c593239085588bd63b
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 16:14:54 2025 -0400
+
+    Fixed interface to have 0-7 represent the letters a-h
+
+commit 49b43df8713a0d896c8b7a22103adb25fcb0587b
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 15:56:13 2025 -0400
+
+    Fixed get_piece interface
+    
+    -Interface for get_piece was missing taking in a type t
+
+commit 0b137c4d446d342883dad5da4ffcf95aac0fa2b2
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 15:49:16 2025 -0400
+
+    Added some required clases
+    
+    -Checking if inputs fall within a valid range will not be the responsability
+    of the person that implementes the user interface
+
+commit 57d5af883634d05d5d41af275b0b29ccace02872
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 15:40:59 2025 -0400
+
+    Implemented interfaces and stub version of piece
+    
+    -interfaces for board and piece are done
+    -valid_move of the piece.ml returns true no matter what, so it is a stub version of the function
+    -the current dune file in the lib folder is configured to ignore the fact that the board is not implemented
+
+commit c14edf55750c188def341e7a8030504d7ba76a84
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 14:34:52 2025 -0400
+
+    Added some extra files so that the repo is ready to be pulled
+
+commit 5c0210ef460d832b0f2d356a688c2719381fc1fc
+Merge: 94ff65b b922865
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 13:25:20 2025 -0400
+
+    Merge branch 'main' of github.coecis.cornell.edu:ma2384/le-critters-3110
+
+commit 94ff65b4c3f57183f933e754fdcf9403a0710769
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Wed Mar 26 13:24:25 2025 -0400
+
+    Initial Commit
+
+commit b9228657bde22e8181a54f68b66586d1ae24df9d
+Author: Jason Guo <jhg294@cornell.edu>
+Date:   Sun Mar 9 14:47:49 2025 -0400
+
+    jason
+
+commit 6553dfd388a73ae46fb64713d4154c5ebeeade6a
+Author: Andrew <arg286@cornell.edu>
+Date:   Sun Mar 9 14:28:43 2025 -0400
+
+    Andrew initial commit
+
+commit a2b1ebbc6d155c9c6ba372ecf09f3c8c1dbf9cb4
+Merge: 8bf80f2 50b375c
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Sun Mar 9 14:25:22 2025 -0400
+
+    Merge branch 'main' of github.coecis.cornell.edu:ma2384/le-critters-3110
+
+commit 8bf80f28c3e4eef74799a2d6f726572314acf66e
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Sun Mar 9 14:22:16 2025 -0400
+
+    Mikael
+
+commit 75fbc0d75ba33ecc1185ca98580b64751afeade5
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Sun Mar 9 14:18:45 2025 -0400
+
+    Mikael
+
+commit 50b375c4dc9f3512f2b5b70021d821ae7afebddd
+Author: Fanhao Yu <fy229@cornell.edu>
+Date:   Sun Mar 9 14:16:16 2025 -0400
+
+    Fanhao Yu README
+
+commit 1eb12a18d91f14ff49e2127a906ff30b2c0cdb02
+Author: ma2384 <ma2384@cornell.edu>
+Date:   Sun Mar 9 13:55:49 2025 -0400
+
+    Initial commit
