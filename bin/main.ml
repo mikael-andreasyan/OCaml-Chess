@@ -150,6 +150,7 @@ let draw_board location_x length =
    piece was valid. Then, it'll make the piece follow the cursor of the player
    until they select the place they want to put their piece.*)
 let rec move_piece status length start_x =
+  draw_board start_x length;
   let piece_x_start = (status.mouse_x - start_x) / length in
   let piece_y_start = status.mouse_y / length in
   if
@@ -162,6 +163,7 @@ let rec move_piece status length start_x =
     fill_rect
       ((piece_x_start * length) + start_x)
       (piece_y_start * length) length length;
+    draw_piece_at (piece_y_start, piece_x_start) start_x length;
     let status_new = wait_next_event [ Button_down ] in
     let piece_end_x = (status.mouse_x - start_x) / length in
     let piece_end_y = status.mouse_y / length in
