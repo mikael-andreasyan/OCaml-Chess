@@ -696,7 +696,7 @@ let legal_moves board : move array =
     for file = 0 to 7 do
       match get_piece board (rank, file) with
       | Some piece_code ->
-          let color = if piece_code land 8 = 0 then white else black in
+          let color = if piece_code land 8 = 0 then black else white in
           if color = board.turn then
             let piece_type = (piece_code land 7) - 1 in
             let generator =
