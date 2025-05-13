@@ -12,5 +12,6 @@ https://www.chessprogramming.org/Bitboards
 For fen string understanding we used: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
 
 Citations for syntax: 
-https://ocaml.org/manual/4.01/libref/Graphics.html
+https://ocaml.org/manual/4.01/libref/Graphics.html - Used for graphics
+https://ocaml.org/manual/5.3/api/Array.html - Various syntax used in board, testing files, and engine
 

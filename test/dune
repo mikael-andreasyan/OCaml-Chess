@@ -1,2 +1,4 @@
 (test
- (name test_chess))
+ (name test_chess)
+ (deps (glob_files_rec ../data/*))
+ (libraries chess ounit2))

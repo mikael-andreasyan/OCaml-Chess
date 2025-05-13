@@ -136,7 +136,6 @@ let swap_color color = if color = light then dark else light
    with [length] being the length of the tiles and [location_x] being the
    starting point of the board on the x axis*)
 let draw_board location_x length =
-  Board.printerMoveList (Board.legal_moves board);
   let color = ref dark in
   for r = 0 to 7 do
     for c = 0 to 7 do
@@ -182,7 +181,7 @@ let rec move_piece status length start_x =
 
 let () =
   open_graph "";
-  set_window_title "Le Critters Chess";
+  set_window_title "Le Critters' Bloody Chess";
   resize_window 1280 720;
   while true do
     let status = wait_next_event [ Button_down; Button_up ] in

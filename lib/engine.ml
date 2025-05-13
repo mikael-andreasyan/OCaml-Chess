@@ -1,7 +1,6 @@
-(**Quick array for piece values*)
-let pieceValuesMid = [| 82; 337; 365; 477; 1025; 0 |]
-
-let pieceValuesEnd = [| 94; 281; 297; 512; 936; 0 |]
+(* Quick array for piece values *)
+let pieceValuesMid = [| 82; 337; 365; 477; 1025; 5000 |]
+let pieceValuesEnd = [| 94; 281; 297; 512; 936; 10000 |]
 let gamephaseInc = [| 0; 1; 1; 2; 4; 0 |]
 let depth = 20
 let bishopPair = 48
@@ -190,8 +189,7 @@ let shield1 = 10
 let shield2 = 5
 
 (**[wkingShield board color] is a score for how protected the white king is. We
-   basically want pawns in front of the king to help protect checkmate
-   opporunities. *)
+   basically want pawns in front of the king to help protect the king*)
 let wkingShield board =
   let open Base.Int64 in
   let result = ref 0 in
@@ -232,8 +230,7 @@ let wkingShield board =
   else 0
 
 (**[bkingShield board color] is a score for how protected the white king is. We
-   basically want pawns in front of the king to help protect checkmate
-   opporunities. *)
+   basically want pawns in front of the king to help protect the king *)
 let bkingShield board =
   let open Base.Int64 in
   let result = ref 0 in
@@ -422,24 +419,21 @@ let rec search_all_captures alpha beta board =
   else
     let alpha' = ref (max alpha evaluation) in
     let movesList = Board.legal_moves board in
-    if Base.Array.is_empty movesList then
-      if Board.player_check board (Board.current_turn board) then min_int else 0
-    else
-      try
-        for x = 0 to Base.Array.length movesList - 1 do
-          let move = Base.Array.get movesList x in
-          ignore (Board.make_move board move);
-          let evaluation =
-            -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
-          in
-          Board.unmake_move board;
-          if evaluation >= beta then (
-            alpha' := beta;
-            failwith "")
-          else alpha' := max !alpha' evaluation
-        done;
-        !alpha'
-      with _ -> !alpha'
+    try
+      for x = 0 to Base.Array.length movesList - 1 do
+        let move = Base.Array.get movesList x in
+        ignore (Board.make_move board move);
+        let evaluation =
+          -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
+        in
+        Board.unmake_move board;
+        if evaluation >= beta then (
+          alpha' := beta;
+          failwith "")
+        else alpha' := max !alpha' evaluation
+      done;
+      !alpha'
+    with _ -> !alpha'
 
 (** [search searchDepth alpha beta board] searches for the best move and returns
     the evaluation of the best move available. *)
@@ -447,26 +441,23 @@ let rec search searchDepth alpha beta board =
   if searchDepth = 0 then search_all_captures alpha beta board
   else
     let movesList = Board.legal_moves board in
-    if Base.Array.length movesList = 0 then
-      if Board.player_check board (Board.current_turn board) then min_int else 0
-    else
-      let return = ref alpha in
-      let alpha' = ref alpha in
-      try
-        for x = 0 to Base.Array.length movesList - 1 do
-          let move = Base.Array.get movesList x in
-          ignore (Board.make_move board move);
-          let evaluation =
-            -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
-          in
-          Board.unmake_move board;
-          if evaluation >= beta then (
-            return := beta;
-            failwith "")
-          else alpha' := max !alpha' evaluation
-        done;
-        !return
-      with _ -> !return
+    let return = ref alpha in
+    let alpha' = ref alpha in
+    try
+      for x = 0 to Base.Array.length movesList - 1 do
+        let move = Base.Array.get movesList x in
+        ignore (Board.make_move board move);
+        let evaluation =
+          -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
+        in
+        Board.unmake_move board;
+        if evaluation >= beta then (
+          return := beta;
+          failwith "")
+        else alpha' := max !alpha' evaluation
+      done;
+      !return
+    with _ -> !return
 
 let get_move board =
   let movesList = Board.legal_moves board in

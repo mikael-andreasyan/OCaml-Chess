@@ -80,8 +80,9 @@ val player_check : t -> bool
 (**[player_check board color] checks if the player of the given color on the
    board is in check.*)
 
-val printerMoveList : move Base.Array.t -> unit
-(**[printerMoveList moveList] is a printed version of the entire board.*)
+val printerMoveList : move Base.Array.t -> string
+(**[printerMoveList moveList] is a function that makes the movelist friendly for
+   printing in testing file.*)
 
 val printerBoard : t -> unit
 (**[printer board] prints out a string of the board.*)
