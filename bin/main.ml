@@ -189,8 +189,19 @@ let rec move_piece status length start_x =
     let piece_end_x = (status_new.mouse_x - start_x) / length in
     let piece_end_y = status_new.mouse_y / length in
     if
-      Board.make_move board
-        ((piece_x_start, piece_y_start), (piece_end_x, piece_end_y), None)
+      if
+        Board.get_piece board (piece_x_start, piece_y_start) = Some 9
+        && piece_end_y = 7
+        || Board.get_piece board (piece_x_start, piece_y_start) = Some 1
+           && piece_end_y = 0
+      then
+        Board.make_move board
+          ( (piece_x_start, piece_y_start),
+            (piece_end_x, piece_end_y),
+            Some Board.queen )
+      else
+        Board.make_move board
+          ((piece_x_start, piece_y_start), (piece_end_x, piece_end_y), None)
     then ()
     else draw_board start_x length;
     move_piece status_new length start_x)
