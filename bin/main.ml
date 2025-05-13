@@ -8,24 +8,25 @@ let light = 0xd7db98
 let dark_draw = black
 let light_draw = 0xf9f6f2
 let select = 0x92dae8
+let move_color = 0xadafb9
 
 let board =
   Board.make_board2 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 (**a collection of functions that draw the pieces as representations of basic
-   shapes. All follow the same format of [draw_piece offset length (r,f) color],
+   shapes. All follow the same format of [draw_piece offset length (f,r) color],
    where the [offset] is how far the board is drawn from the corner of the
-   screen, [length] is the length of each tile, [r,f] is the rank and file of
+   screen, [length] is the length of each tile, [f,r] is the file and rank of
    the piece and [color] is the color of the piece*)
 
-let draw_pawn offset_x length (r, f) color =
+let draw_pawn offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
     ((r * length) + (length / 4))
     (length / 2) (length / 2)
 
-let draw_knight offset_x length (r, f) color =
+let draw_knight offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
@@ -38,7 +39,7 @@ let draw_knight offset_x length (r, f) color =
     (length * 2 / 4)
     (length * 1 / 4)
 
-let draw_bish offset_x length (r, f) color =
+let draw_bish offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length * 3 / 8))
@@ -50,7 +51,7 @@ let draw_bish offset_x length (r, f) color =
     ((r * length) + (length * 11 / 16))
     (length / 4)
 
-let draw_rook offset_x length (r, f) color =
+let draw_rook offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
@@ -65,7 +66,7 @@ let draw_rook offset_x length (r, f) color =
     ((r * length) + (length / 2))
     (length / 6) (length / 4)
 
-let draw_queen offset_x length (r, f) color =
+let draw_queen offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
@@ -87,7 +88,7 @@ let draw_queen offset_x length (r, f) color =
   in
   fill_poly points_array
 
-let draw_king offset_x length (r, f) color =
+let draw_king offset_x length (f, r) color =
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
@@ -121,12 +122,12 @@ let draw_key =
    [rank,file] of the board unto the screen. [offset_x] is how much the board
    drawing is offset from the edge of the screen and [length] is the size of
    each tile*)
-let draw_piece_at (rank, file) offset_x length =
-  match Board.get_piece board (rank, file) with
+let draw_piece_at (file, rank) offset_x length =
+  match Board.get_piece board (file, rank) with
   | Some piece ->
       let color = if Int.logand piece 8 = 8 then light_draw else dark_draw in
       let piece_num = if color = light_draw then piece - 8 else piece in
-      draw_key.(piece_num) offset_x length (rank, file) color
+      draw_key.(piece_num) offset_x length (file, rank) color
   | None -> ()
 
 (**swaps the current color to the other color*)
@@ -137,14 +138,33 @@ let swap_color color = if color = light then dark else light
    starting point of the board on the x axis*)
 let draw_board location_x length =
   let color = ref dark in
-  for r = 0 to 7 do
-    for c = 0 to 7 do
-      if c = 0 then () else color := swap_color !color;
+  for file = 0 to 7 do
+    for rank = 0 to 7 do
+      if rank = 0 then () else color := swap_color !color;
       set_color !color;
-      fill_rect (location_x + (r * length)) (c * length) length length;
-      draw_piece_at (c, r) location_x length
+      fill_rect (location_x + (file * length)) (rank * length) length length;
+      draw_piece_at (file, rank) location_x length
     done
   done
+
+(**[draw_move (file,rank) start_x length] draws a little circle that is supposed
+   to indicate a move at (file,rank)*)
+let draw_move (file, rank) start_x length =
+  fill_circle
+    (start_x + (file * length) + (length / 2))
+    ((rank * length) + (length / 2))
+    (length / 8)
+
+(**[draw_moves_for (file,rank) start_x length] draws all the possible moves for
+   the piece at [file,rank] by drawing little black cirlces for valid moves.*)
+let draw_moves_for (file, rank) start_x length =
+  set_color move_color;
+  let moves_for_piece =
+    List.filter
+      (fun (st, _, _) -> st = (file, rank))
+      (Array.to_list (Board.legal_moves board))
+  in
+  List.iter (fun (_, ed, _) -> draw_move ed start_x length) moves_for_piece
 
 (**[move_piece status] checks if the location where the user pressed to select a
    piece was valid. Then, it'll make the piece follow the cursor of the player
@@ -156,25 +176,21 @@ let rec move_piece status length start_x =
   if
     status.mouse_x < start_x
     || status.mouse_x > start_x + (length * 8)
-    || Board.get_piece board (piece_y_start, piece_x_start) = None
+    || Board.get_piece board (piece_x_start, piece_y_start) = None
   then ()
   else (
     set_color select;
     fill_rect
       ((piece_x_start * length) + start_x)
       (piece_y_start * length) length length;
-    draw_piece_at (piece_y_start, piece_x_start) start_x length;
+    draw_piece_at (piece_x_start, piece_y_start) start_x length;
+    draw_moves_for (piece_x_start, piece_y_start) start_x length;
     let status_new = wait_next_event [ Button_down ] in
     let piece_end_x = (status_new.mouse_x - start_x) / length in
     let piece_end_y = status_new.mouse_y / length in
-    print_endline
-      ("start at "
-      ^ string_of_int piece_y_start
-      ^ string_of_int piece_x_start
-      ^ "end at " ^ string_of_int piece_end_y ^ string_of_int piece_end_x);
     if
       Board.make_move board
-        ((piece_y_start, piece_x_start), (piece_end_y, piece_end_x), None)
+        ((piece_x_start, piece_y_start), (piece_end_x, piece_end_y), None)
     then ()
     else draw_board start_x length;
     move_piece status_new length start_x)
