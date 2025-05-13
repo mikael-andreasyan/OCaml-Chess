@@ -669,7 +669,7 @@ let generators =
 
 let legal_moves board : move array =
   let open Int64 in
-  let ans = Base.Array.create ~len:218 ((0, 0), (0, 0), None) in
+  let ans = Base.Array.create ~len:218 ((-1, -1), (-1, -1), None) in
   let index = ref 0 in
   for piece = pawn to king do
     let bitBoard = ref board.board.(piece).(board.turn) in
@@ -687,7 +687,7 @@ let castlingRights (rank, file) =
   else if rank = 0 && file = 0 then 2
   else if rank = 7 && file = 7 then 4
   else if rank = 7 && file = 0 then 8
-  else failwith "not valid rook posistion"
+  else 0
 
 let castlingCancel = [| 0b1100; 0b11 |]
 
@@ -703,11 +703,15 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
             board.board.(piece).(board.turn) <-
               board.board.(piece).(board.turn) lxor start;
             for piece = pawn to king do
-              board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
-                board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+              if
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
+                <> zero
+              then
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
             done;
             board.board.(newPiece).(board.turn) <-
-              board.board.(newPiece).(board.turn) lxor finish
+              board.board.(newPiece).(board.turn) land finish
         | None ->
             let opp_occ =
               let o = Stdlib.( - ) 1 board.turn in
@@ -721,15 +725,19 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
             if opp_occ land finish = zero then (
               board.board.(piece).(board.turn) <-
                 board.board.(piece).(board.turn) lxor (start lor finish);
-              board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
-                board.board.(piece).(Stdlib.( lxor ) board.turn 1)
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                board.board.(piece).(Stdlib.( - ) 1 board.turn)
                 lxor board.enPassant)
             else (
               board.board.(piece).(board.turn) <-
                 board.board.(piece).(board.turn) lxor (start lor finish);
               for piece = pawn to king do
-                board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
-                  board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+                if
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
+                  <> zero
+                then
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                    board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
               done;
               if Stdlib.(file2 - file1 = 2) then board.enPassant <- finish
               else ())
@@ -739,8 +747,12 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
           board.board.(piece).(board.turn) <-
             board.board.(piece).(board.turn) lxor (start lor finish);
           for piece = pawn to king do
-            board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
-              board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+            if
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
+              <> zero
+            then
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
           done;
           board.castlingRights <-
             Stdlib.( land ) board.castlingRights castlingCancel.(board.turn))
@@ -748,8 +760,10 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
         board.board.(piece).(board.turn) <-
           board.board.(piece).(board.turn) lxor (start lor finish);
         for piece = pawn to king do
-          board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
-            board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+          if board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish <> zero
+          then
+            board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
         done;
         if Stdlib.( = ) piece rook then
           board.castlingRights <-
