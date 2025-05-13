@@ -922,7 +922,8 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
         else ())
     else ()
   done;
-  board.turn <- Stdlib.( lxor ) board.turn 1
+  board.turn <- Stdlib.( lxor ) board.turn 1;
+  Stack.push board.moveList board.board
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
   let legal_moves_list = legal_moves board in
