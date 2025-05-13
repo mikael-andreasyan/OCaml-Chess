@@ -1,7 +1,7 @@
 let pieceValuesMid = [| 82; 337; 365; 477; 1025; 5000 |]
 let pieceValuesEnd = [| 94; 281; 297; 512; 936; 5000 |]
 let gamephaseInc = [| 0; 1; 1; 2; 4; 0 |]
-let depth = 20
+let depth = 4
 let bishopPair = 48
 let knightPair = 16
 let rookPair = 24
@@ -186,90 +186,6 @@ let endTable =
 
 let shield1 = 10
 let shield2 = 5
-
-(**[wkingShield board color] is a score for how protected the white king is. We
-   basically want pawns in front of the king to help protect checkmate
-   opporunities. *)
-let wkingShield board =
-  let open Base.Int64 in
-  let result = ref 0 in
-  let pawns =
-    ref
-      (Board.get_piece_bitBoard board Board.pawn Board.white
-      land shift_left Board.file1 1)
-  in
-  let king =
-    Board.bit_to_tuple (Board.get_piece_bitBoard board Board.king Board.white)
-  in
-  if Stdlib.( = ) (fst king) 0 && Stdlib.( > ) (snd king) 4 then (
-    let return = ref 0 in
-    while !pawns <> zero do
-      let lsb = ref (!pawns land neg !pawns) in
-      let rank, file = Board.bit_to_tuple !lsb in
-      if Stdlib.( = ) file 1 && Stdlib.( > ) rank 4 then
-        result := Stdlib.( + ) !result shield1
-      else if Stdlib.( = ) file 2 && Stdlib.( > ) rank 4 then
-        result := Stdlib.( + ) !result shield2
-      else ();
-      pawns := !pawns land (!pawns - one)
-    done;
-    !return)
-  else if Stdlib.( = ) (fst king) 0 && Stdlib.( <= ) (snd king) 4 then (
-    let return = ref 0 in
-    while !pawns <> zero do
-      let lsb = ref (!pawns land neg !pawns) in
-      let rank, file = Board.bit_to_tuple !lsb in
-      if Stdlib.( = ) file 1 && Stdlib.( <= ) rank 4 then
-        result := Stdlib.( + ) !result shield1
-      else if Stdlib.( = ) file 2 && Stdlib.( <= ) rank 4 then
-        result := Stdlib.( + ) !result shield2
-      else ();
-      pawns := !pawns land (!pawns - one)
-    done;
-    !return)
-  else 0
-
-(**[bkingShield board color] is a score for how protected the white king is. We
-   basically want pawns in front of the king to help protect checkmate
-   opporunities. *)
-let bkingShield board =
-  let open Base.Int64 in
-  let result = ref 0 in
-  let pawns =
-    ref
-      (Board.get_piece_bitBoard board Board.pawn Board.black
-      land shift_right_logical Board.file8 1)
-  in
-  let king =
-    Board.bit_to_tuple (Board.get_piece_bitBoard board Board.king Board.black)
-  in
-  if Stdlib.( = ) (fst king) 0 && Stdlib.( > ) (snd king) 4 then (
-    let return = ref 0 in
-    while !pawns <> zero do
-      let lsb = ref (!pawns land neg !pawns) in
-      let rank, file = Board.bit_to_tuple !lsb in
-      if Stdlib.( = ) file 6 && Stdlib.( > ) rank 4 then
-        result := Stdlib.( + ) !result shield1
-      else if Stdlib.( = ) file 5 && Stdlib.( > ) rank 4 then
-        result := Stdlib.( + ) !result shield2
-      else ();
-      pawns := !pawns land (!pawns - one)
-    done;
-    !return)
-  else if Stdlib.( = ) (fst king) 0 && Stdlib.( <= ) (snd king) 4 then (
-    let return = ref 0 in
-    while !pawns <> zero do
-      let lsb = ref (!pawns land neg !pawns) in
-      let rank, file = Board.bit_to_tuple !lsb in
-      if Stdlib.( = ) file 6 && Stdlib.( <= ) rank 4 then
-        result := Stdlib.( + ) !result shield1
-      else if Stdlib.( = ) file 5 && Stdlib.( <= ) rank 4 then
-        result := Stdlib.( + ) !result shield2
-      else ();
-      pawns := !pawns land (!pawns - one)
-    done;
-    !return)
-  else 0
 
 (**[wkingShield board color] is a score for how protected the white king is. We
    basically want pawns in front of the king to help protect the king*)
@@ -494,37 +410,12 @@ let eval board =
   result := !result + adjustMaterial.(0) - adjustMaterial.(1);
   !result
 
-(** [search_all_captures alpha beta board] searches through positions where only
-    captures are available. *)
-let rec search_all_captures alpha beta board =
-  let evaluation = eval board in
-  if evaluation >= beta then beta
-  else
-    let alpha' = ref (max alpha evaluation) in
-    let movesList = Board.legal_moves board in
-    if Base.Array.is_empty movesList then
-      if Board.playerLose board then min_int else 0
-    else
-      try
-        for x = 0 to Base.Array.length movesList - 1 do
-          let move = Base.Array.get movesList x in
-          ignore (Board.make_move board move);
-          let evaluation =
-            -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
-          in
-          Board.unmake_move board;
-          if evaluation >= beta then (
-            alpha' := beta;
-            failwith "")
-          else alpha' := max !alpha' evaluation
-        done;
-        !alpha'
-      with _ -> !alpha'
-
 (** [search searchDepth alpha beta board] searches for the best move and returns
     the evaluation of the best move available. *)
 let rec search searchDepth alpha beta board =
-  if searchDepth = 0 then search_all_captures alpha beta board
+  if searchDepth = 0 then
+    let evaluation = eval board in
+    if evaluation >= beta then beta else evaluation
   else
     let movesList = Board.legal_moves board in
     if Base.Array.length movesList = 0 then
@@ -535,66 +426,20 @@ let rec search searchDepth alpha beta board =
       try
         for x = 0 to Base.Array.length movesList - 1 do
           let move = Base.Array.get movesList x in
-          ignore (Board.make_move board move);
-          let evaluation =
-            -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
-          in
-          Board.unmake_move board;
-          if evaluation >= beta then (
-            return := beta;
-            failwith "")
-          else alpha' := max !alpha' evaluation
+          if move <> ((-1, -1), (-1, -1), None) then (
+            ignore (Board.make_move board move);
+            let evaluation =
+              -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
+            in
+            Board.unmake_move board;
+            if evaluation >= beta then (
+              return := beta;
+              failwith "")
+            else alpha' := max !alpha' evaluation)
+          else failwith ""
         done;
         !return
       with _ -> !return
-
-(** [search_all_captures alpha beta board] searches through positions where only
-    captures are available. *)
-let rec search_all_captures alpha beta board =
-  let evaluation = eval board in
-  if evaluation >= beta then beta
-  else
-    let alpha' = ref (max alpha evaluation) in
-    let movesList = Board.legal_moves board in
-    try
-      for x = 0 to Base.Array.length movesList - 1 do
-        let move = Base.Array.get movesList x in
-        ignore (Board.make_move board move);
-        let evaluation =
-          -1 * search_all_captures (-1 * beta) (-1 * !alpha') board
-        in
-        Board.unmake_move board;
-        if evaluation >= beta then (
-          alpha' := beta;
-          failwith "")
-        else alpha' := max !alpha' evaluation
-      done;
-      !alpha'
-    with _ -> !alpha'
-
-(** [search searchDepth alpha beta board] searches for the best move and returns
-    the evaluation of the best move available. *)
-let rec search searchDepth alpha beta board =
-  if searchDepth = 0 then search_all_captures alpha beta board
-  else
-    let movesList = Board.legal_moves board in
-    let return = ref alpha in
-    let alpha' = ref alpha in
-    try
-      for x = 0 to Base.Array.length movesList - 1 do
-        let move = Base.Array.get movesList x in
-        ignore (Board.make_move board move);
-        let evaluation =
-          -1 * search (searchDepth - 1) (-1 * beta) (-1 * !alpha') board
-        in
-        Board.unmake_move board;
-        if evaluation >= beta then (
-          return := beta;
-          failwith "")
-        else alpha' := max !alpha' evaluation
-      done;
-      !return
-    with _ -> !return
 
 let get_move board =
   let movesList = Board.legal_moves board in
@@ -602,13 +447,17 @@ let get_move board =
   else
     let best_move = ref (Base.Array.get movesList 0) in
     let best_eval = ref min_int in
-    for i = 0 to Base.Array.length movesList - 1 do
-      let move = Base.Array.get movesList i in
-      ignore (Board.make_move board move);
-      let eval = -1 * search (depth - 1) min_int max_int board in
-      Board.unmake_move board;
-      if eval > !best_eval then (
-        best_eval := eval;
-        best_move := move)
-    done;
-    !best_move
+    try
+      for i = 0 to Base.Array.length movesList - 1 do
+        let move = Base.Array.get movesList i in
+        if move <> ((-1, -1), (-1, -1), None) then (
+          ignore (Board.make_move board move);
+          let eval = -1 * search (depth - 1) min_int max_int board in
+          Board.unmake_move board;
+          if eval > !best_eval then (
+            best_eval := eval;
+            best_move := move))
+        else failwith ""
+      done;
+      !best_move
+    with _ -> !best_move

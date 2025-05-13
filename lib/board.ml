@@ -7,7 +7,8 @@ type t = {
   mutable turn : int;
   mutable castlingRights : int;
   mutable enPassant : int64;
-  mutable moveList : int64 array array Stack.t;
+  prevBoardState : int64 array array Stack.t;
+  prevCastleEnPassant : (int * int64) Stack.t;
 }
 (**AF: the board is represented by 6 two dimensional arrays of 64 bit ints from
    Jane Street's base library. The first index associates itself with a piece
@@ -78,7 +79,14 @@ let tuple_to_bit (rank, file) =
 let current_turn board = board.turn
 
 let make_board1 board turn castlingRights enPassant =
-  { board; turn; castlingRights; enPassant; moveList = Stack.create () }
+  {
+    board;
+    turn;
+    castlingRights;
+    enPassant;
+    prevBoardState = Stack.create ();
+    prevCastleEnPassant = Stack.create ();
+  }
 
 let empty_board () : Int64.t array array =
   Array.init 6 ~f:(fun _ -> Array.create ~len:2 Int64.zero)
@@ -127,7 +135,14 @@ let make_board2 fen : t =
         let rank = Char.to_int ep.[1] - Char.to_int '1' in
         tuple_to_bit (rank, file)
   in
-  { board; turn; castlingRights; enPassant; moveList = Stack.create () }
+  {
+    board;
+    turn;
+    castlingRights;
+    enPassant;
+    prevBoardState = Stack.create ();
+    prevCastleEnPassant = Stack.create ();
+  }
 
 let get_piece board (rank, file) =
   let bit = tuple_to_bit (rank, file) in
@@ -739,6 +754,16 @@ let castlingNewSpot (rank, file) =
 let castlingCancel = [| 0b1100; 0b11 |]
 
 let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
+  Stack.push board.prevBoardState
+    [|
+      [| board.board.(pawn).(white); board.board.(pawn).(black) |];
+      [| board.board.(knight).(white); board.board.(knight).(black) |];
+      [| board.board.(bishop).(white); board.board.(bishop).(black) |];
+      [| board.board.(rook).(white); board.board.(rook).(black) |];
+      [| board.board.(queen).(white); board.board.(queen).(black) |];
+      [| board.board.(king).(white); board.board.(king).(black) |];
+    |];
+  Stack.push board.prevCastleEnPassant (board.castlingRights, board.enPassant);
   let open Int64 in
   let start = tuple_to_bit (rank1, file1) in
   let finish = tuple_to_bit (rank2, file2) in
@@ -922,8 +947,7 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
         else ())
     else ()
   done;
-  board.turn <- Stdlib.( lxor ) board.turn 1;
-  Stack.push board.moveList board.board
+  board.turn <- Stdlib.( lxor ) board.turn 1
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
   let legal_moves_list = legal_moves board in
@@ -947,10 +971,15 @@ let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
   else false
 
 let unmake_move board =
-  let prev = Stack.pop board.moveList in
-  match prev with
-  | None -> ()
-  | Some boardState -> board.board <- boardState
+  let prev1 = Stack.pop board.prevBoardState in
+  let prev2 = Stack.pop board.prevCastleEnPassant in
+  match (prev1, prev2) with
+  | Some boardState, Some (x, y) ->
+      board.board <- boardState;
+      board.castlingRights <- x;
+      board.enPassant <- y;
+      board.turn <- board.turn lxor 1
+  | _ -> ()
 
 let printerBoard board =
   let boardString = ref "" in
