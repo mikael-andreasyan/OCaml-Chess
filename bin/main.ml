@@ -191,7 +191,9 @@ let rec move_piece status length start_x =
     || status.mouse_x > start_x + (length * 8)
     || Board.get_piece board (piece_x_start, piece_y_start) = None
     || Board.playerLose board
-  then ()
+  then
+    let status_new = wait_next_event [ Button_down ] in
+    move_piece status_new length start_x
   else (
     draw_selected start_x length (piece_x_start, piece_y_start);
     draw_moves_for (piece_x_start, piece_y_start) start_x length;
@@ -219,7 +221,10 @@ let rec move_piece status length start_x =
       draw_board start_x length;
       move_piece status_new length start_x))
 
-let () =
+(**[start_gui ai first] starts the gui. If [ai] is true, the player is playing
+   against an AI. If [first] is true it means the player is going first.
+   Otherwise, it means the player is playing second*)
+let start_gui ai first =
   open_graph "";
   set_window_title "Le Critters' Bloody Chess";
   resize_window 1280 720;
@@ -227,6 +232,11 @@ let () =
   fill_rect 0 0 (size_x ()) (size_y ());
   draw_board ((size_x () - size_y ()) / 2) (size_y () / 8);
   while true do
+    if ai && (not first) && not (Board.playerLose board) then (
+      let move = Engine.get_move board in
+      ignore (Board.make_move board move);
+      draw_board ((size_x () - size_y ()) / 2) (size_y () / 8))
+    else ();
     let status = wait_next_event [ Button_down ] in
     let y = size_y () in
     let x = size_x () in
@@ -234,5 +244,23 @@ let () =
     set_color black;
     fill_rect 0 0 x y;
     let location_x = (x - y) / 2 in
-    move_piece status tile_length location_x
+    draw_board location_x tile_length;
+    move_piece status tile_length location_x;
+    if ai && first && not (Board.playerLose board) then
+      let move = Engine.get_move board in
+      let _ = Board.make_move board move in
+      draw_board location_x tile_length
+    else print_endline "black didn't move"
   done
+
+let print_usage () =
+  print_endline
+    "Usage: if you want to play against the AI, use the string white or the \
+     string black as argument to this program. If you want to play a hotseat \
+     game with a friend, just launch the exe"
+
+let () =
+  if Array.length Sys.argv = 1 then start_gui false false
+  else if Sys.argv.(1) = "white" then start_gui true true
+  else if Sys.argv.(1) = "black" then start_gui true false
+  else print_usage ()
