@@ -194,7 +194,10 @@ let legal_moves_pawn board (rank, file) list index =
          index := Stdlib.( + ) !index 1)
      else ());
     (let newPos2 = shift_left pawnBit 2 in
-     if Stdlib.( = ) file 1 && newPos2 land (me_occ lor opp_occ) = zero then (
+     if
+       Stdlib.( = ) file 1
+       && newPos2 lor shift_left pawnBit 1 land (me_occ lor opp_occ) = zero
+     then (
        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
        index := Stdlib.( + ) !index 1));
     if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
@@ -270,7 +273,11 @@ let legal_moves_pawn board (rank, file) list index =
           index := Stdlib.( + ) !index 1)
       else ();
       (let newPos2 = shift_right_logical pawnBit 2 in
-       if Stdlib.( = ) file 6 && newPos2 land (me_occ lor opp_occ) = zero then (
+       if
+         Stdlib.( = ) file 6
+         && newPos2 lor shift_right_logical pawnBit 1 land (me_occ lor opp_occ)
+            = zero
+       then (
          Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
          index := Stdlib.( + ) !index 1));
       let newPos2 = shift_left pawnBit 7 in
@@ -749,8 +756,30 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
                 board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
                 <> zero
               then
-                board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
-                  board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
+                if Stdlib.( = ) piece king then (
+                  board.castlingRights <-
+                    (if Stdlib.( = ) board.turn white then
+                       Stdlib.( land ) board.castlingRights 0b0011
+                     else Stdlib.( land ) board.castlingRights 0b11);
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                    board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish;
+                  try
+                    for newPiece = queen downto pawn do
+                      let temp =
+                        board.board.(newPiece).(Stdlib.( - ) 1 board.turn)
+                      in
+                      if temp = zero then ()
+                      else
+                        let lsb = temp land neg temp in
+                        board.board.(king).(Stdlib.( - ) 1 board.turn) <- lsb;
+                        board.board.(newPiece).(Stdlib.( - ) 1 board.turn) <-
+                          temp land (temp - one);
+                        failwith "done"
+                    done
+                  with _ -> ())
+                else
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                    board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
             done;
             board.board.(newPiece).(board.turn) <-
               board.board.(newPiece).(board.turn) lor finish
@@ -777,8 +806,32 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
                   board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
                   <> zero
                 then
-                  board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
-                    board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
+                  if Stdlib.( = ) piece king then (
+                    board.castlingRights <-
+                      (if Stdlib.( = ) board.turn white then
+                         Stdlib.( land ) board.castlingRights 0b0011
+                       else Stdlib.( land ) board.castlingRights 0b11);
+                    board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                      board.board.(piece).(Stdlib.( - ) 1 board.turn)
+                      lxor finish;
+                    try
+                      for newPiece = queen downto pawn do
+                        let temp =
+                          board.board.(newPiece).(Stdlib.( - ) 1 board.turn)
+                        in
+                        if temp = zero then ()
+                        else
+                          let lsb = temp land neg temp in
+                          board.board.(king).(Stdlib.( - ) 1 board.turn) <- lsb;
+                          board.board.(newPiece).(Stdlib.( - ) 1 board.turn) <-
+                            temp land (temp - one);
+                          failwith "done"
+                      done
+                    with _ -> ())
+                  else
+                    board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                      board.board.(piece).(Stdlib.( - ) 1 board.turn)
+                      lxor finish
               done;
               if Stdlib.(abs (file2 - file1) = 2) then board.enPassant <- finish
               else ())
@@ -798,8 +851,30 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
               board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish
               <> zero
             then
-              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
-                board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
+              if Stdlib.( = ) piece king then (
+                board.castlingRights <-
+                  (if Stdlib.( = ) board.turn white then
+                     Stdlib.( land ) board.castlingRights 0b0011
+                   else Stdlib.( land ) board.castlingRights 0b11);
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish;
+                try
+                  for newPiece = queen downto pawn do
+                    let temp =
+                      board.board.(newPiece).(Stdlib.( - ) 1 board.turn)
+                    in
+                    if temp = zero then ()
+                    else
+                      let lsb = temp land neg temp in
+                      board.board.(king).(Stdlib.( - ) 1 board.turn) <- lsb;
+                      board.board.(newPiece).(Stdlib.( - ) 1 board.turn) <-
+                        temp land (temp - one);
+                      failwith "done"
+                  done
+                with _ -> ())
+              else
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                  board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
           done;
           board.castlingRights <-
             Stdlib.( land ) board.castlingRights castlingCancel.(board.turn))
@@ -850,7 +925,6 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
   board.turn <- Stdlib.( lxor ) board.turn 1
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
-  Stdlib.print_string (Stdlib.string_of_int board.castlingRights);
   let legal_moves_list = legal_moves board in
   if
     Base.Array.mem legal_moves_list
@@ -868,7 +942,6 @@ let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
         | _ -> false)
   then (
     updateBoard board ((rank1, file1), (rank2, file2), promo_opt);
-    Stdlib.print_string (Stdlib.string_of_int board.castlingRights);
     true)
   else false
 
