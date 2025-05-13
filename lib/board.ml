@@ -106,7 +106,7 @@ let make_board2 fen : t =
           else
             let pi = piece_index c in
             let ci = color_index c in
-            let bit = tuple_to_bit (!file, 7 - rank) in
+            let bit = tuple_to_bit (7 - !file, 7 - rank) in
             board.(pi).(ci) <- Int64.( lor ) board.(pi).(ci) bit;
             Stdlib.decr file));
   let turn = if String.equal (List.nth_exn parts 1) "w" then 0 else 1 in
@@ -757,7 +757,7 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
         else ())
     else ()
   done;
-  ()
+  board.turn <- Stdlib.( lxor ) board.turn 1
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
   let legal_moves_list = legal_moves board in
@@ -772,6 +772,8 @@ let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
         | Some int1, Some int2 ->
             rank1 = rank3 && rank2 = rank4 && file1 = file3 && file2 = file4
             && int1 = int2
+        | None, None ->
+            rank1 = rank3 && rank2 = rank4 && file1 = file3 && file2 = file4
         | _ -> false)
   then (
     updateBoard board ((rank1, file1), (rank2, file2), promo_opt);
