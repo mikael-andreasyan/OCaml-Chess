@@ -3,7 +3,7 @@ type t
    representation, current player color, and some other ueful information
    regarding castling, enpassant, etc.*)
 
-type move = (int * int) * (int * int) * int option
+type move = (int * int) * (int * int) * int option * bool
 (**Type representation for a move. *)
 
 (*Some useful constants*)
@@ -36,6 +36,9 @@ val make_board2 : string -> t
 val legal_moves : t -> move Base.Array.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
    board. *)
+
+val legal_moves_pawn : t -> int * int -> move Base.Array.t -> int -> int
+val legal_moves_knight : t -> int * int -> move Base.Array.t -> int -> int
 
 val make_move : t -> move -> bool
 (**[make_move board ((rank1, file1), (rank2, file2))] attempts to move the piece
@@ -75,10 +78,6 @@ val bit_to_tuple : Base.Int64.t -> int * int
 val tuple_to_bit : int * int -> Base.Int64.t
 (**[tuple_to_bit (rank, file)] outputs the bit of the chess posistion with the
    given (rank, file).*)
-
-val player_check : t -> bool
-(**[player_check board color] checks if the player of the given color on the
-   board is in check.*)
 
 val printerMoveList : move Base.Array.t -> unit
 (**[printerMoveList moveList] is a printed version of the entire board.*)

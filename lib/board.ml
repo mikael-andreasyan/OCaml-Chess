@@ -98,18 +98,17 @@ let make_board2 fen : t =
   let board = empty_board () in
   let parts = String.split fen ~on:' ' in
   let rows = String.split (List.nth_exn parts 0) ~on:'/' in
-  List.iteri rows ~f:(fun rank_rev row ->
-      let file = ref 0 in
+  List.iteri rows ~f:(fun rank row ->
+      let file = ref 7 in
       String.iter row ~f:(fun c ->
           if Char.is_digit c then
-            file := !file + (Char.to_int c - Char.to_int '0')
+            file := !file - (Char.to_int c - Char.to_int '0')
           else
             let pi = piece_index c in
             let ci = color_index c in
-            let rank = 7 - rank_rev in
-            let bit = tuple_to_bit (rank, !file) in
-            board.(pi).(ci) <- Int64.bit_or board.(pi).(ci) bit;
-            Int.incr file));
+            let bit = tuple_to_bit (!file, 7 - rank) in
+            board.(pi).(ci) <- Int64.( lor ) board.(pi).(ci) bit;
+            Stdlib.decr file));
   let turn = if String.equal (List.nth_exn parts 1) "w" then 0 else 1 in
   let castlingRights =
     let cstr = List.nth_exn parts 2 in
@@ -148,81 +147,7 @@ let get_piece board (rank, file) =
 
 let get_piece_bitBoard board pieceType color = board.board.(pieceType).(color)
 
-let player_check board =
-  let open Int64 in
-  let turn = board.turn in
-  let opp = Stdlib.( - ) 1 turn in
-  let king_bit = board.board.(king).(turn) in
-  if king_bit = zero then false
-  else
-    let square = Int64.ctz king_bit in
-    let rank = Stdlib.( / ) square 8 and file = Stdlib.( mod ) square 8 in
-
-    let kbit = tuple_to_bit (rank, file) in
-
-    let pawn_attackers =
-      if Stdlib.( = ) turn white then
-        bit_or
-          (shift_left kbit 7 land bit_not file1)
-          (shift_left kbit 9 land bit_not file8)
-      else
-        bit_or
-          (shift_right_logical kbit 7 land bit_not file8)
-          (shift_right_logical kbit 9 land bit_not file1)
-    in
-    if bit_and pawn_attackers board.board.(pawn).(opp) <> zero then true
-    else
-      let knight_moves = [| 6; 10; 15; 17 |] in
-      let is_attacked_by_knight =
-        Array.exists knight_moves ~f:(fun s ->
-            bit_and (shift_left kbit s) board.board.(knight).(opp) <> zero
-            || bit_and (shift_right_logical kbit s) board.board.(knight).(opp)
-               <> zero)
-      in
-      if is_attacked_by_knight then true
-      else
-        let rec ray_attack dir get_piece =
-          let rec loop b =
-            let next =
-              if Stdlib.( = ) dir 1 || Stdlib.( = ) dir 8 || Stdlib.( = ) dir 9
-              then shift_left b dir
-              else shift_right_logical b dir
-            in
-            if next = zero then false
-            else if
-              bit_and next
-                (board.board.(pawn).(turn)
-                lor board.board.(knight).(turn)
-                lor board.board.(bishop).(turn)
-                lor board.board.(rook).(turn)
-                lor board.board.(queen).(turn)
-                lor board.board.(king).(turn))
-              <> zero
-            then false
-            else if bit_and next (get_piece board.board) <> zero then true
-            else loop next
-          in
-          loop kbit
-        in
-        let bishop_dirs = [| 7; 9 |] and rook_dirs = [| 1; 8 |] in
-        let attacked_by_bishop =
-          Array.exists bishop_dirs ~f:(fun d ->
-              ray_attack d (fun b -> b.(bishop).(opp) lor b.(queen).(opp)))
-        in
-        let attacked_by_rook =
-          Array.exists rook_dirs ~f:(fun d ->
-              ray_attack d (fun b -> b.(rook).(opp) lor b.(queen).(opp)))
-        in
-        if attacked_by_bishop || attacked_by_rook then true
-        else
-          let king_attack_mask =
-            bit_or
-              (bit_or (shift_left kbit 1) (shift_right_logical kbit 1))
-              (bit_or (shift_left kbit 8) (shift_right_logical kbit 8))
-          in
-          bit_and king_attack_mask board.board.(king).(opp) <> zero
-
-let legal_moves_pawn board (rank, file) list index : move array * int =
+let legal_moves_pawn board (rank, file) list index =
   let open Int64 in
   let ans = list in
   let index = ref index in
@@ -245,73 +170,116 @@ let legal_moves_pawn board (rank, file) list index : move array * int =
     lor board.board.(knight).(o)
   in
   let pawnBit = tuple_to_bit (rank, file) in
-  (if pawnBit land board.board.(pawn).(board.turn) = zero then
-     failwith "Not valid pawn move"
-   else
-     let newPos1 = shift_left pawnBit 1 in
-     if newPos1 land (me_occ lor opp_occ) = zero then (
-       if Stdlib.( = ) file 6 then (
-         Base.Array.set ans !index
-           ((rank, file), bit_to_tuple newPos1, Some knight);
-         index := Stdlib.( + ) !index 1;
-         Base.Array.set ans !index
-           ((rank, file), bit_to_tuple newPos1, Some bishop);
-         index := Stdlib.( + ) !index 1;
-         Base.Array.set ans !index
-           ((rank, file), bit_to_tuple newPos1, Some rook);
-         index := Stdlib.( + ) !index 1;
-         Base.Array.set ans !index
-           ((rank, file), bit_to_tuple newPos1, Some queen);
-         index := Stdlib.( + ) !index 1)
-       else Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, None);
+  if pawnBit land board.board.(pawn).(board.turn) = zero then
+    failwith "Not valid pawn move"
+  else ();
+  (let newPos1 = shift_left pawnBit 1 in
+   if newPos1 land (me_occ lor opp_occ) = zero then
+     if Stdlib.( = ) file 6 then (
+       Base.Array.set ans !index
+         ((rank, file), bit_to_tuple newPos1, Some knight);
+       index := Stdlib.( + ) !index 1;
+       Base.Array.set ans !index
+         ((rank, file), bit_to_tuple newPos1, Some bishop);
+       index := Stdlib.( + ) !index 1;
+       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some rook);
+       index := Stdlib.( + ) !index 1;
+       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some queen);
        index := Stdlib.( + ) !index 1)
-     else ());
-  let newPos2 = shift_left pawnBit 2 in
-  if Stdlib.( = ) file 1 && newPos2 land (me_occ lor opp_occ) = zero then (
-    Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
-    index := Stdlib.( + ) !index 1);
-  if Stdlib.( = ) board.turn white then
-    if
-      Stdlib.( = ) file 4
-      && shift_left pawnBit 8
-         lor shift_right_logical pawnBit 8
-         land board.enPassant
-         = zero
-    then ()
-    else if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
+     else (
+       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, None);
+       index := Stdlib.( + ) !index 1)
+   else ());
+  (let newPos2 = shift_left pawnBit 2 in
+   if Stdlib.( = ) file 1 && newPos2 land (me_occ lor opp_occ) = zero then (
+     Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+     index := Stdlib.( + ) !index 1));
+  if Stdlib.( = ) board.turn white then (
+    if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
       Base.Array.set ans !index
         ((rank, file), bit_to_tuple (shift_right_logical pawnBit 7), None);
-      index := Stdlib.( + ) !index 1;
-      if shift_left pawnBit 8 land board.enPassant <> zero then (
-        Base.Array.set ans !index
-          ((rank, file), bit_to_tuple (shift_left pawnBit 9), None);
-        index := Stdlib.( + ) !index 1))
-    else ()
-  else if Stdlib.( = ) board.turn black then
-    if
-      Stdlib.( = ) file 3
-      && shift_left pawnBit 8
-         land shift_right_logical pawnBit 8
-         land board.enPassant
-         = zero
-    then ()
-    else if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
-      Base.Array.set ans !index
-        ( (rank, file),
-          bit_to_tuple (shift_right_logical pawnBit 9 land board.enPassant),
-          None );
       index := Stdlib.( + ) !index 1)
-    else if shift_left pawnBit 8 land board.enPassant <> zero then (
+    else ();
+    if shift_left pawnBit 8 land board.enPassant <> zero then (
       Base.Array.set ans !index
-        ( (rank, file),
-          bit_to_tuple (shift_left pawnBit 7 land board.enPassant),
-          None );
+        ((rank, file), bit_to_tuple (shift_left pawnBit 9), None);
       index := Stdlib.( + ) !index 1)
-    else ()
+    else ())
+  else if Stdlib.( = ) board.turn black then (
+    if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
+      Base.Array.set ans !index
+        ((rank, file), bit_to_tuple (shift_left pawnBit 7), None);
+      index := Stdlib.( + ) !index 1)
+    else ();
+    if shift_left pawnBit 8 land board.enPassant <> zero then (
+      Base.Array.set ans !index
+        ((rank, file), bit_to_tuple (shift_right_logical pawnBit 9), None);
+      index := Stdlib.( + ) !index 1)
+    else ())
   else ();
-  (ans, !index)
+  if Stdlib.( = ) board.turn white then
+    let newPos2 = shift_right_logical pawnBit 7 in
+    let newPos3 = shift_left pawnBit 9 in
+    if Stdlib.( <> ) file 6 then
+      if newPos2 land opp_occ <> zero then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+        index := Stdlib.( + ) !index 1)
+      else if newPos3 land opp_occ <> zero then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, None);
+        index := Stdlib.( + ) !index 1)
+      else ()
+    else if newPos2 land opp_occ <> zero then (
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some knight);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some bishop);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some rook);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some queen);
+      index := Stdlib.( + ) !index 1)
+    else if newPos3 land opp_occ <> zero then (
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some knight);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some bishop);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some rook);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some queen);
+      index := Stdlib.( + ) !index 1)
+    else ()
+  else if Stdlib.( = ) board.turn black then (
+    let newPos2 = shift_left pawnBit 7 in
+    let newPos3 = shift_right_logical pawnBit 9 in
+    if Stdlib.( <> ) file 6 then
+      if newPos2 land opp_occ <> zero then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+        index := Stdlib.( + ) !index 1)
+      else if newPos3 land opp_occ <> zero then (
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, None);
+        index := Stdlib.( + ) !index 1)
+      else ()
+    else if newPos2 land opp_occ <> zero then (
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some knight);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some bishop);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some rook);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some queen);
+      index := Stdlib.( + ) !index 1)
+    else if newPos3 land opp_occ <> zero then (
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some knight);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some bishop);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some rook);
+      index := Stdlib.( + ) !index 1;
+      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some queen);
+      index := Stdlib.( + ) !index 1))
+  else ();
+  !index
 
-let legal_moves_knight board (rank, file) list index : move array * int =
+let legal_moves_knight board (rank, file) list index =
   let open Int64 in
   let ans = list in
   let index = ref index in
@@ -359,9 +327,9 @@ let legal_moves_knight board (rank, file) list index : move array * int =
       index := Stdlib.( + ) !index 1)
     else ()
   done;
-  (ans, !index)
+  !index
 
-let legal_moves_bishop board (rank, file) list index : move array * int =
+let legal_moves_bishop board (rank, file) list index =
   let open Int64 in
   let ans = list in
   let index = ref index in
@@ -439,9 +407,9 @@ let legal_moves_bishop board (rank, file) list index : move array * int =
     slide2_right bishopBit;
     slide3_left bishopBit;
     slide3_right bishopBit;
-    (ans, !index)
+    !index
 
-let legal_moves_rook board (rank, file) list index : move array * int =
+let legal_moves_rook board (rank, file) list index =
   let open Int64 in
   let ans = list in
   let index = ref index in
@@ -529,9 +497,9 @@ let legal_moves_rook board (rank, file) list index : move array * int =
     west rookBit;
     south rookBit;
     north rookBit;
-    (ans, !index)
+    !index
 
-let legal_moves_queen board (rank, file) list index : move array * int =
+let legal_moves_queen board (rank, file) list index =
   let module I = Int64 in
   let open I in
   let ans = list in
@@ -599,9 +567,9 @@ let legal_moves_queen board (rank, file) list index : move array * int =
       slide_left queenBit;
       slide_right queenBit
     done;
-  (ans, !index)
+  !index
 
-let legal_moves_king board (rank, file) list index : move array * int =
+let legal_moves_king board (rank, file) list index =
   let open Int64 in
   let ans = list in
   let index = ref index in
@@ -687,118 +655,130 @@ let legal_moves_king board (rank, file) list index : move array * int =
           index := Stdlib.( + ) !index 1)
         else ())
       else ());
-  (ans, !index)
+  !index
+
+let generators =
+  [|
+    legal_moves_pawn;
+    legal_moves_knight;
+    legal_moves_bishop;
+    legal_moves_rook;
+    legal_moves_queen;
+    legal_moves_king;
+  |]
 
 let legal_moves board : move array =
-  let moves = Array.create ~len:maxLegalMoves ((0, 0), (0, 0), None) in
+  let open Int64 in
+  let ans = Base.Array.create ~len:218 ((0, 0), (0, 0), None) in
   let index = ref 0 in
-  for rank = 0 to 7 do
-    for file = 0 to 7 do
-      match get_piece board (rank, file) with
-      | Some piece_code ->
-          let color = if piece_code land 8 = 0 then black else white in
-          if color = board.turn then
-            let piece_type = (piece_code land 7) - 1 in
-            let generator =
-              match piece_type with
-              | 0 -> legal_moves_pawn
-              | 1 -> legal_moves_knight
-              | 2 -> legal_moves_bishop
-              | 3 -> legal_moves_rook
-              | 4 -> legal_moves_queen
-              | 5 -> legal_moves_king
-              | _ -> fun _ _ l i -> (l, i)
-            in
-            let _, new_index = generator board (rank, file) moves !index in
-            index := new_index
-      | None -> ()
+  for piece = pawn to king do
+    let bitBoard = ref board.board.(piece).(board.turn) in
+    while !bitBoard <> zero do
+      let lsb = !bitBoard land neg !bitBoard in
+      let tuple = bit_to_tuple lsb in
+      index := generators.(piece) board tuple ans !index;
+      bitBoard := !bitBoard land (!bitBoard - one)
     done
   done;
-  Array.sub moves ~pos:0 ~len:!index
+  ans
+
+let castlingRights (rank, file) =
+  if rank = 0 && file = 7 then 1
+  else if rank = 0 && file = 0 then 2
+  else if rank = 7 && file = 7 then 4
+  else if rank = 7 && file = 0 then 8
+  else failwith "not valid rook posistion"
+
+let castlingCancel = [| 0b1100; 0b11 |]
+
+let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
+  let open Int64 in
+  let start = tuple_to_bit (rank1, file1) in
+  let finish = tuple_to_bit (rank2, file2) in
+  for piece = pawn to king do
+    if board.board.(piece).(board.turn) land start <> zero then
+      if Stdlib.( = ) piece pawn then
+        match promo_opt with
+        | Some newPiece ->
+            board.board.(piece).(board.turn) <-
+              board.board.(piece).(board.turn) lxor start;
+            for piece = pawn to king do
+              board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
+                board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+            done;
+            board.board.(newPiece).(board.turn) <-
+              board.board.(newPiece).(board.turn) lxor finish
+        | None ->
+            let opp_occ =
+              let o = Stdlib.( - ) 1 board.turn in
+              board.board.(king).(o)
+              lor board.board.(queen).(o)
+              lor board.board.(rook).(o)
+              lor board.board.(bishop).(o)
+              lor board.board.(pawn).(o)
+              lor board.board.(knight).(o)
+            in
+            if opp_occ land finish = zero then (
+              board.board.(piece).(board.turn) <-
+                board.board.(piece).(board.turn) lxor (start lor finish);
+              board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
+                board.board.(piece).(Stdlib.( lxor ) board.turn 1)
+                lxor board.enPassant)
+            else (
+              board.board.(piece).(board.turn) <-
+                board.board.(piece).(board.turn) lxor (start lor finish);
+              for piece = pawn to king do
+                board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
+                  board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+              done;
+              if Stdlib.(file2 - file1 = 2) then board.enPassant <- finish
+              else ())
+      else if Stdlib.( = ) piece king then
+        if board.board.(rook).(board.turn) land finish <> zero then ()
+        else (
+          board.board.(piece).(board.turn) <-
+            board.board.(piece).(board.turn) lxor (start lor finish);
+          for piece = pawn to king do
+            board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
+              board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+          done;
+          board.castlingRights <-
+            Stdlib.( land ) board.castlingRights castlingCancel.(board.turn))
+      else (
+        board.board.(piece).(board.turn) <-
+          board.board.(piece).(board.turn) lxor (start lor finish);
+        for piece = pawn to king do
+          board.board.(piece).(Stdlib.( lxor ) board.turn 1) <-
+            board.board.(piece).(Stdlib.( lxor ) board.turn 1) lxor finish
+        done;
+        if Stdlib.( = ) piece rook then
+          board.castlingRights <-
+            Stdlib.( lxor ) board.castlingRights (castlingRights (rank1, file1))
+        else ())
+    else ()
+  done;
+  ()
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
-  let open Int64 in
-  let legal = legal_moves board in
-  let move_is_legal =
-    Array.exists legal ~f:(fun ((r1, f1), (r2, f2), p) ->
-        Stdlib.( = ) r1 rank1 && Stdlib.( = ) f1 file1 && Stdlib.( = ) r2 rank2
-        && Stdlib.( = ) f2 file2 && Stdlib.( = ) p promo_opt)
-  in
-  if not move_is_legal then false
-  else
-    let src_bit = tuple_to_bit (rank1, file1) in
-    let dst_bit = tuple_to_bit (rank2, file2) in
-    let turn = board.turn in
-    let opp = Stdlib.( - ) 1 turn in
-    let moved_piece = ref (-1) in
-    for p = 0 to 5 do
-      if bit_and board.board.(p).(turn) src_bit <> zero then (
-        board.board.(p).(turn) <- bit_xor board.board.(p).(turn) src_bit;
-        moved_piece := p)
-    done;
-    for p = 0 to 5 do
-      if bit_and board.board.(p).(opp) dst_bit <> zero then
-        board.board.(p).(opp) <- bit_xor board.board.(p).(opp) dst_bit
-    done;
-    let final_piece =
-      match promo_opt with
-      | Some p -> p
-      | None -> !moved_piece
-    in
-    if Stdlib.( >= ) final_piece 0 then
-      board.board.(final_piece).(turn) <-
-        bit_or board.board.(final_piece).(turn) dst_bit;
-    board.enPassant <-
-      (if Stdlib.(!moved_piece = pawn && abs (rank1 - rank2) = 2) then
-         tuple_to_bit (Stdlib.(rank1 + (rank2 / 2)), file1)
-       else zero);
-    Stack.push board.moveList ((rank1, file1), (rank2, file2), promo_opt);
-    board.turn <- opp;
-    true
+  let legal_moves_list = legal_moves board in
+  if
+    Base.Array.mem legal_moves_list
+      ((rank1, file1), (rank2, file2), promo_opt)
+      ~equal:(fun
+          ((rank1, file1), (rank2, file2), promo_opt1)
+          ((rank3, file3), (rank4, file4), promo_opt2)
+        ->
+        match (promo_opt1, promo_opt2) with
+        | Some int1, Some int2 ->
+            rank1 = rank3 && rank2 = rank4 && file1 = file3 && file2 = file4
+            && int1 = int2
+        | _ -> false)
+  then (
+    updateBoard board ((rank1, file1), (rank2, file2), promo_opt);
+    true)
+  else false
 
-let unmake_move board =
-  let open Int64 in
-  if Stack.is_empty board.moveList then ()
-  else
-    let (rank1, file1), (rank2, file2), promo_opt =
-      Stack.pop_exn board.moveList
-    in
-    let src_bit = tuple_to_bit (rank1, file1) in
-    let dst_bit = tuple_to_bit (rank2, file2) in
-    let opp = board.turn in
-    let turn = Stdlib.( - ) 1 opp in
-    board.turn <- turn;
-
-    for p = 0 to 5 do
-      board.board.(p).(turn) <- bit_and board.board.(p).(turn) (lnot dst_bit)
-    done;
-
-    let piece_index =
-      match promo_opt with
-      | Some _ -> pawn
-      | None ->
-          let found = ref (-1) in
-          for p = 0 to 5 do
-            if bit_and board.board.(p).(turn) dst_bit <> zero then found := p
-          done;
-          !found
-    in
-
-    let source_piece =
-      match promo_opt with
-      | Some p -> p
-      | None -> piece_index
-    in
-
-    if Stdlib.( >= ) source_piece 0 then
-      board.board.(source_piece).(turn) <-
-        bit_or board.board.(source_piece).(turn) src_bit;
-
-    if Stdlib.( <> ) promo_opt None then
-      board.board.(Option.value_exn promo_opt).(turn) <-
-        bit_and board.board.(Option.value_exn promo_opt).(turn) (lnot dst_bit);
-
-    board.enPassant <- zero
+let unmake_move board = failwith "fuck you"
 
 let printerBoard board =
   let boardString = ref "" in
