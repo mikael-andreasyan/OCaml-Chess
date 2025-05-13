@@ -89,6 +89,14 @@ let draw_queen offset_x length (f, r) color =
   fill_poly points_array
 
 let draw_king offset_x length (f, r) color =
+  if
+    Board.playerLose board
+    && ((Board.current_turn board = Board.white && color = light_draw)
+       || (Board.current_turn board = Board.black && color = dark_draw))
+  then (
+    set_color red;
+    fill_rect (offset_x + (f * length)) (r * length) length length)
+  else ();
   set_color color;
   fill_rect
     (offset_x + (f * length) + (length / 4))
@@ -219,5 +227,7 @@ let () =
     fill_rect 0 0 x y;
     let location_x = (x - y) / 2 in
     draw_board location_x tile_length;
-    if button_down () then move_piece status tile_length location_x else ()
+    if Board.playerLose board then ()
+    else if button_down () then move_piece status tile_length location_x
+    else ()
   done
