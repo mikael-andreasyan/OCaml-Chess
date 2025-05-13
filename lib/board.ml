@@ -3,11 +3,11 @@ open Base
 type move = (int * int) * (int * int) * int option
 
 type t = {
-  board : int64 array array;
+  mutable board : int64 array array;
   mutable turn : int;
   mutable castlingRights : int;
   mutable enPassant : int64;
-  mutable moveList : move Stack.t;
+  mutable moveList : int64 array array Stack.t;
 }
 (**AF: the board is represented by 6 two dimensional arrays of 64 bit ints from
    Jane Street's base library. The first index associates itself with a piece
@@ -945,7 +945,11 @@ let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
     true)
   else false
 
-let unmake_move board = failwith "fuck you"
+let unmake_move board =
+  let prev = Stack.pop board.moveList in
+  match prev with
+  | None -> ()
+  | Some boardState -> board.board <- boardState
 
 let printerBoard board =
   let boardString = ref "" in
