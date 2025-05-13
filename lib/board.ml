@@ -815,6 +815,27 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
                   (cancelCastlingRights (rank2, file2));
               board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
                 board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish)
+            else if Stdlib.( = ) piece king then (
+              board.castlingRights <-
+                (if Stdlib.( = ) board.turn white then
+                   Stdlib.( land ) board.castlingRights 0b0011
+                 else Stdlib.( land ) board.castlingRights 0b11);
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish;
+              try
+                for newPiece = queen downto pawn do
+                  let temp =
+                    board.board.(newPiece).(Stdlib.( - ) 1 board.turn)
+                  in
+                  if temp = zero then ()
+                  else
+                    let lsb = temp land neg temp in
+                    board.board.(king).(Stdlib.( - ) 1 board.turn) <- lsb;
+                    board.board.(newPiece).(Stdlib.( - ) 1 board.turn) <-
+                      temp land (temp - one);
+                    failwith "done"
+                done
+              with _ -> ())
             else
               board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
                 board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
@@ -884,3 +905,13 @@ let printerMoveList (movelist : move Base.Array.t) =
             !finalString
             ^ Printf.sprintf "From (%d, %d) to (%d, %d)\n" x1 y1 x2 y2);
   !finalString
+
+let playerLose board =
+  let open Int64 in
+  try
+    for piece = queen downto pawn do
+      let temp = board.board.(piece).(board.turn) in
+      if temp = zero then () else failwith "done"
+    done;
+    true
+  with _ -> false

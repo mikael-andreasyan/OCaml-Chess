@@ -85,3 +85,6 @@ val printerMoveList : move Base.Array.t -> string
 
 val printerBoard : t -> unit
 (**[printer board] prints out a string of the board.*)
+
+val playerLose : t -> bool
+(**[playerLose board] is whether or not the current player has lost.*)
