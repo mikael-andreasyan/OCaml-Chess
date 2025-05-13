@@ -74,10 +74,105 @@ let board2_moves : Board.move array =
     ((6, 7), (5, 5), None);
   |]
 
+(* Board 3: White starting position *)
+let board1 =
+  Board.make_board2 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+let board1_moves : Board.move array =
+  [|
+    ((0, 1), (0, 2), None);
+    ((0, 1), (0, 3), None);
+    ((1, 1), (1, 2), None);
+    ((1, 1), (1, 3), None);
+    ((2, 1), (2, 2), None);
+    ((2, 1), (2, 3), None);
+    ((3, 1), (3, 2), None);
+    ((3, 1), (3, 3), None);
+    ((4, 1), (4, 2), None);
+    ((4, 1), (4, 3), None);
+    ((5, 1), (5, 2), None);
+    ((5, 1), (5, 3), None);
+    ((6, 1), (6, 2), None);
+    ((6, 1), (6, 3), None);
+    ((7, 1), (7, 2), None);
+    ((7, 1), (7, 3), None);
+    ((1, 0), (0, 2), None);
+    ((1, 0), (2, 2), None);
+    ((6, 0), (5, 2), None);
+    ((6, 0), (7, 2), None);
+  |]
+
+(* Board 3: Castling rights intact *)
+let board3 = Board.make_board2 "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1"
+
+let board3_moves : Board.move array =
+  [|
+    (* Kingside castling *)
+    ((4, 0), (6, 0), None);
+    (* Queenside castling *)
+    ((4, 0), (2, 0), None);
+    (* Rook moves *)
+    ((0, 0), (1, 0), None);
+    ((0, 0), (2, 0), None);
+    ((0, 0), (3, 0), None);
+    ((7, 0), (6, 0), None);
+    ((7, 0), (5, 0), None);
+    (* King standard moves *)
+    ((4, 0), (3, 0), None);
+    ((4, 0), (5, 0), None);
+  |]
+
+(* Board 4: En passant *)
+let board4 =
+  Board.make_board2
+    "rnbqkbnr/pppp1ppp/8/4p3/3P4/8/PPP2PPP/RNBQKBNR w KQkq e6 0 3"
+
+let board4_moves : Board.move array =
+  [|
+    (* En passant capture *)
+    ((3, 4), (4, 5), None);
+    (* Standard pawn moves *)
+    ((0, 1), (0, 2), None);
+    ((0, 1), (0, 3), None);
+    ((1, 1), (1, 2), None);
+    ((1, 1), (1, 3), None);
+    ((2, 1), (2, 2), None);
+    ((2, 1), (2, 3), None);
+    ((5, 1), (5, 2), None);
+    ((5, 1), (5, 3), None);
+    ((6, 1), (6, 2), None);
+    ((6, 1), (6, 3), None);
+    ((7, 1), (7, 2), None);
+    ((7, 1), (7, 3), None);
+    (* Knight moves *)
+    ((1, 0), (0, 2), None);
+    ((1, 0), (2, 2), None);
+    ((6, 0), (5, 2), None);
+    ((6, 0), (7, 2), None);
+  |]
+
+(* Board 5: Promotion opportunity *)
+let board5 = Board.make_board2 "4k3/3P4/8/8/8/8/8/4K3 w - - 0 1"
+
+let board5_moves : Board.move array =
+  [|
+    (* Promotions *)
+    ((3, 6), (3, 7), None);
+    ((3, 6), (3, 7), None);
+    ((3, 6), (3, 7), None);
+    ((3, 6), (3, 7), None);
+    (* King move *)
+    ((4, 0), (3, 0), None);
+    ((4, 0), (5, 0), None);
+    ((4, 0), (3, 1), None);
+    ((4, 0), (4, 1), None);
+    ((4, 0), (5, 1), None);
+  |]
+
 (**[compare_moves name board expected] creates a test case with the name [name]
    where it gets the legal moveset from [board] and makes sure that said board
    has the same elements as [expected]*)
-let comapre_moves name board expected =
+let compare_moves name board expected =
   name >:: fun _ ->
   assert_equal (Board.legal_moves board) expected ~printer:Board.printerMoveList
 
