@@ -3,7 +3,7 @@ type t
    representation, current player color, and some other ueful information
    regarding castling, enpassant, etc.*)
 
-type move = (int * int) * (int * int) * int option * bool
+type move = (int * int) * (int * int) * int option
 (**Type representation for a move. *)
 
 (*Some useful constants*)
