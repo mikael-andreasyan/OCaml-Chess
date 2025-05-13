@@ -40,15 +40,15 @@ let castleFree =
   [|
     [|
       (*king*)
-      Int64.of_int64 0b10000000100000000000000000000000000000000000000000L;
+      Int64.(shift_left one 48 + shift_left one 40);
       (*queen*)
-      Int64.of_int64 0b1000000010000000100000000L;
+      Int64.(shift_left one 8 + shift_left one 16 + shift_left one 24);
     |];
     [|
       (*king*)
-      Int64.of_int64 0b10000000100000000000000000000000000000000000000000000000L;
+      Int64.(shift_left one 55 + shift_left one 47);
       (*queen*)
-      Int64.of_int64 0b10000000100000001000000000000000L;
+      Int64.(shift_left one 15 + shift_left one 23 + shift_left one 31);
     |];
   |]
 
@@ -657,37 +657,37 @@ let legal_moves_king board (rank, file) list index =
         Base.Array.set ans !index ((rank, file), bit_to_tuple newPos, None);
         index := Stdlib.( + ) !index 1)
       else ()
-    done;
-    if Stdlib.( = ) board.turn white then
-      if
-        castleFree.(white).(0) land (me_occ lor opp_occ) = zero
-        && Stdlib.(board.castlingRights land 1 <> 0)
-      then (
-        Base.Array.set ans !index ((rank, file), (0, 7), None);
-        index := Stdlib.( + ) !index 1;
-        if
-          castleFree.(white).(1) land (me_occ lor opp_occ) = zero
-          && Stdlib.(board.castlingRights land 2 <> 0)
-        then (
-          Base.Array.set ans !index ((rank, file), (0, 0), None);
-          index := Stdlib.( + ) !index 1)
-        else ())
-      else ()
-    else if Stdlib.( = ) board.turn black then
-      if
-        castleFree.(black).(0) land (me_occ lor opp_occ) = zero
-        && Stdlib.(board.castlingRights land 4 <> 0)
-      then (
-        Base.Array.set ans !index ((rank, file), (7, 7), None);
-        index := Stdlib.( + ) !index 1;
-        if
-          castleFree.(black).(1) land (me_occ lor opp_occ) = zero
-          && Stdlib.(board.castlingRights land 8 <> 0)
-        then (
-          Base.Array.set ans !index ((rank, file), (7, 0), None);
-          index := Stdlib.( + ) !index 1)
-        else ())
-      else ());
+    done);
+  if Stdlib.( = ) board.turn white then (
+    if
+      castleFree.(white).(0) land (me_occ lor opp_occ) = zero
+      && Stdlib.(board.castlingRights land 1 <> 0)
+    then (
+      Base.Array.set ans !index ((rank, file), (7, 0), None);
+      index := Stdlib.( + ) !index 1)
+    else ();
+    if
+      castleFree.(white).(1) land (me_occ lor opp_occ) = zero
+      && Stdlib.(board.castlingRights land 2 <> 0)
+    then (
+      Base.Array.set ans !index ((rank, file), (0, 0), None);
+      index := Stdlib.( + ) !index 1)
+    else ())
+  else if Stdlib.( = ) board.turn black then (
+    if
+      castleFree.(black).(0) land (me_occ lor opp_occ) = zero
+      && Stdlib.(board.castlingRights land 4 <> 0)
+    then (
+      Base.Array.set ans !index ((rank, file), (7, 7), None);
+      index := Stdlib.( + ) !index 1)
+    else ();
+    if
+      castleFree.(black).(1) land (me_occ lor opp_occ) = zero
+      && Stdlib.(board.castlingRights land 8 <> 0)
+    then (
+      Base.Array.set ans !index ((rank, file), (0, 7), None);
+      index := Stdlib.( + ) !index 1)
+    else ());
   !index
 
 let generators =
@@ -715,12 +715,19 @@ let legal_moves board : move array =
   done;
   ans
 
-let castlingRights (rank, file) =
-  if rank = 0 && file = 7 then 1
-  else if rank = 0 && file = 0 then 2
-  else if rank = 7 && file = 7 then 4
-  else if rank = 7 && file = 0 then 8
-  else 0
+let cancelCastlingRights (rank, file) =
+  if rank = 7 && file = 0 then 0b1110
+  else if rank = 0 && file = 0 then 0b1101
+  else if rank = 7 && file = 7 then 0b1011
+  else if rank = 0 && file = 7 then 0b111
+  else 0b1111
+
+let castlingNewSpot (rank, file) =
+  if rank = 7 && file = 0 then ((6, 0), (5, 0), 0b1100)
+  else if rank = 0 && file = 0 then ((2, 0), (3, 0), 0b1100)
+  else if rank = 7 && file = 7 then ((6, 7), (5, 7), 0b11)
+  else if rank = 0 && file = 7 then ((2, 7), (3, 7), 0b11)
+  else failwith "not possible castle"
 
 let castlingCancel = [| 0b1100; 0b11 |]
 
@@ -773,11 +780,16 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
                   board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
                     board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
               done;
-              Stdlib.(print_string (string_of_bool (file2 - file1 = 2)));
               if Stdlib.(abs (file2 - file1) = 2) then board.enPassant <- finish
               else ())
       else if Stdlib.( = ) piece king then
-        if board.board.(rook).(board.turn) land finish <> zero then ()
+        if board.board.(rook).(board.turn) land finish <> zero then (
+          let end1, end2, bit = castlingNewSpot (rank2, file2) in
+          board.board.(piece).(board.turn) <-
+            board.board.(piece).(board.turn) lxor (start lor tuple_to_bit end1);
+          board.board.(rook).(board.turn) <-
+            board.board.(rook).(board.turn) lxor (finish lor tuple_to_bit end2);
+          board.castlingRights <- Stdlib.(board.castlingRights land bit))
         else (
           board.board.(piece).(board.turn) <-
             board.board.(piece).(board.turn) lxor (start lor finish);
@@ -797,18 +809,27 @@ let updateBoard board ((rank1, file1), (rank2, file2), promo_opt) =
         for piece = pawn to king do
           if board.board.(piece).(Stdlib.( - ) 1 board.turn) land finish <> zero
           then
-            board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
-              board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
+            if Stdlib.( = ) piece rook then (
+              board.castlingRights <-
+                Stdlib.( land ) board.castlingRights
+                  (cancelCastlingRights (rank2, file2));
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish)
+            else
+              board.board.(piece).(Stdlib.( - ) 1 board.turn) <-
+                board.board.(piece).(Stdlib.( - ) 1 board.turn) lxor finish
         done;
         if Stdlib.( = ) piece rook then
           board.castlingRights <-
-            Stdlib.( lxor ) board.castlingRights (castlingRights (rank1, file1))
+            Stdlib.( land ) board.castlingRights
+              (cancelCastlingRights (rank1, file1))
         else ())
     else ()
   done;
   board.turn <- Stdlib.( lxor ) board.turn 1
 
 let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
+  Stdlib.print_string (Stdlib.string_of_int board.castlingRights);
   let legal_moves_list = legal_moves board in
   if
     Base.Array.mem legal_moves_list
@@ -826,6 +847,7 @@ let make_move board ((rank1, file1), (rank2, file2), promo_opt) =
         | _ -> false)
   then (
     updateBoard board ((rank1, file1), (rank2, file2), promo_opt);
+    Stdlib.print_string (Stdlib.string_of_int board.castlingRights);
     true)
   else false
 
