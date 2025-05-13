@@ -79,8 +79,13 @@ val tuple_to_bit : int * int -> Base.Int64.t
 (**[tuple_to_bit (rank, file)] outputs the bit of the chess posistion with the
    given (rank, file).*)
 
-val printerMoveList : move Base.Array.t -> unit
-(**[printerMoveList moveList] is a printed version of the entire board.*)
+val player_check : t -> bool
+(**[player_check board color] checks if the player of the given color on the
+   board is in check.*)
+
+val printerMoveList : move Base.Array.t -> string
+(**[printerMoveList moveList] is a function that makes the movelist friendly for
+   printing in testing file.*)
 
 val printerBoard : t -> unit
 (**[printer board] prints out a string of the board.*)

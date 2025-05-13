@@ -165,18 +165,23 @@ let rec move_piece status length start_x =
       (piece_y_start * length) length length;
     draw_piece_at (piece_y_start, piece_x_start) start_x length;
     let status_new = wait_next_event [ Button_down ] in
-    let piece_end_x = (status.mouse_x - start_x) / length in
-    let piece_end_y = status.mouse_y / length in
+    let piece_end_x = (status_new.mouse_x - start_x) / length in
+    let piece_end_y = status_new.mouse_y / length in
+    print_endline
+      ("start at "
+      ^ string_of_int piece_y_start
+      ^ string_of_int piece_x_start
+      ^ "end at " ^ string_of_int piece_end_y ^ string_of_int piece_end_x);
     if
       Board.make_move board
-        ((piece_end_y, piece_end_x), (piece_end_y, piece_end_x), None)
+        ((piece_y_start, piece_x_start), (piece_end_y, piece_end_x), None)
     then ()
     else draw_board start_x length;
     move_piece status_new length start_x)
 
 let () =
   open_graph "";
-  set_window_title "Le Critters Chess";
+  set_window_title "Le Critters' Bloody Chess";
   resize_window 1280 720;
   while true do
     let status = wait_next_event [ Button_down; Button_up ] in

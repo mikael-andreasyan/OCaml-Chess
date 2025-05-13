@@ -797,9 +797,16 @@ let printerBoard board =
   Stdlib.print_string !boardString
 
 let printerMoveList (movelist : move Base.Array.t) =
+  let finalString = ref "" in
   Array.iter movelist ~f:(fun ((x1, y1), (x2, y2), promo_opt) ->
       match promo_opt with
       | Some p ->
-          Stdlib.Printf.printf "From (%d, %d) to (%d, %d), promote to %d\n" x1
-            y1 x2 y2 p
-      | None -> Stdlib.Printf.printf "From (%d, %d) to (%d, %d)\n" x1 y1 x2 y2)
+          finalString :=
+            !finalString
+            ^ Printf.sprintf "From (%d, %d) to (%d, %d), promote to %d\n" x1 y1
+                x2 y2 p
+      | None ->
+          finalString :=
+            !finalString
+            ^ Printf.sprintf "From (%d, %d) to (%d, %d)\n" x1 y1 x2 y2);
+  !finalString
