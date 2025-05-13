@@ -173,28 +173,30 @@ let legal_moves_pawn board (rank, file) list index =
   if pawnBit land board.board.(pawn).(board.turn) = zero then
     failwith "Not valid pawn move"
   else ();
-  (let newPos1 = shift_left pawnBit 1 in
-   if newPos1 land (me_occ lor opp_occ) = zero then
-     if Stdlib.( = ) file 6 then (
-       Base.Array.set ans !index
-         ((rank, file), bit_to_tuple newPos1, Some knight);
-       index := Stdlib.( + ) !index 1;
-       Base.Array.set ans !index
-         ((rank, file), bit_to_tuple newPos1, Some bishop);
-       index := Stdlib.( + ) !index 1;
-       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some rook);
-       index := Stdlib.( + ) !index 1;
-       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, Some queen);
-       index := Stdlib.( + ) !index 1)
-     else (
-       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, None);
-       index := Stdlib.( + ) !index 1)
-   else ());
-  (let newPos2 = shift_left pawnBit 2 in
-   if Stdlib.( = ) file 1 && newPos2 land (me_occ lor opp_occ) = zero then (
-     Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
-     index := Stdlib.( + ) !index 1));
   if Stdlib.( = ) board.turn white then (
+    (let newPos1 = shift_left pawnBit 1 in
+     if newPos1 land (me_occ lor opp_occ) = zero then
+       if Stdlib.( = ) file 6 then (
+         Base.Array.set ans !index
+           ((rank, file), bit_to_tuple newPos1, Some knight);
+         index := Stdlib.( + ) !index 1;
+         Base.Array.set ans !index
+           ((rank, file), bit_to_tuple newPos1, Some bishop);
+         index := Stdlib.( + ) !index 1;
+         Base.Array.set ans !index
+           ((rank, file), bit_to_tuple newPos1, Some rook);
+         index := Stdlib.( + ) !index 1;
+         Base.Array.set ans !index
+           ((rank, file), bit_to_tuple newPos1, Some queen);
+         index := Stdlib.( + ) !index 1)
+       else (
+         Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, None);
+         index := Stdlib.( + ) !index 1)
+     else ());
+    (let newPos2 = shift_left pawnBit 2 in
+     if Stdlib.( = ) file 1 && newPos2 land (me_occ lor opp_occ) = zero then (
+       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+       index := Stdlib.( + ) !index 1));
     if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
       Base.Array.set ans !index
         ((rank, file), bit_to_tuple (shift_right_logical pawnBit 7), None);
@@ -204,20 +206,7 @@ let legal_moves_pawn board (rank, file) list index =
       Base.Array.set ans !index
         ((rank, file), bit_to_tuple (shift_left pawnBit 9), None);
       index := Stdlib.( + ) !index 1)
-    else ())
-  else if Stdlib.( = ) board.turn black then (
-    if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
-      Base.Array.set ans !index
-        ((rank, file), bit_to_tuple (shift_left pawnBit 7), None);
-      index := Stdlib.( + ) !index 1)
     else ();
-    if shift_left pawnBit 8 land board.enPassant <> zero then (
-      Base.Array.set ans !index
-        ((rank, file), bit_to_tuple (shift_right_logical pawnBit 9), None);
-      index := Stdlib.( + ) !index 1)
-    else ())
-  else ();
-  if Stdlib.( = ) board.turn white then
     let newPos2 = shift_right_logical pawnBit 7 in
     let newPos3 = shift_left pawnBit 9 in
     if Stdlib.( <> ) file 6 then
@@ -246,37 +235,79 @@ let legal_moves_pawn board (rank, file) list index =
       index := Stdlib.( + ) !index 1;
       Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some queen);
       index := Stdlib.( + ) !index 1)
-    else ()
-  else if Stdlib.( = ) board.turn black then (
-    let newPos2 = shift_left pawnBit 7 in
-    let newPos3 = shift_right_logical pawnBit 9 in
-    if Stdlib.( <> ) file 6 then
-      if newPos2 land opp_occ <> zero then (
-        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+    else ())
+  else (
+    if Stdlib.( = ) board.turn black then (
+      if shift_right_logical pawnBit 8 land board.enPassant <> zero then (
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple (shift_left pawnBit 7), None);
+        index := Stdlib.( + ) !index 1)
+      else ();
+      if shift_left pawnBit 8 land board.enPassant <> zero then (
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple (shift_right_logical pawnBit 9), None);
+        index := Stdlib.( + ) !index 1)
+      else ())
+    else ();
+    if Stdlib.( = ) board.turn black then (
+      let newPos1 = shift_right_logical pawnBit 1 in
+      if newPos1 land (me_occ lor opp_occ) = zero then
+        if Stdlib.( = ) file 6 then (
+          Base.Array.set ans !index
+            ((rank, file), bit_to_tuple newPos1, Some knight);
+          index := Stdlib.( + ) !index 1;
+          Base.Array.set ans !index
+            ((rank, file), bit_to_tuple newPos1, Some bishop);
+          index := Stdlib.( + ) !index 1;
+          Base.Array.set ans !index
+            ((rank, file), bit_to_tuple newPos1, Some rook);
+          index := Stdlib.( + ) !index 1;
+          Base.Array.set ans !index
+            ((rank, file), bit_to_tuple newPos1, Some queen);
+          index := Stdlib.( + ) !index 1)
+        else (
+          Base.Array.set ans !index ((rank, file), bit_to_tuple newPos1, None);
+          index := Stdlib.( + ) !index 1)
+      else ();
+      (let newPos2 = shift_right_logical pawnBit 2 in
+       if Stdlib.( = ) file 6 && newPos2 land (me_occ lor opp_occ) = zero then (
+         Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+         index := Stdlib.( + ) !index 1));
+      let newPos2 = shift_left pawnBit 7 in
+      let newPos3 = shift_right_logical pawnBit 9 in
+      if Stdlib.( <> ) file 6 then
+        if newPos2 land opp_occ <> zero then (
+          Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, None);
+          index := Stdlib.( + ) !index 1)
+        else if newPos3 land opp_occ <> zero then (
+          Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, None);
+          index := Stdlib.( + ) !index 1)
+        else ()
+      else if newPos2 land opp_occ <> zero then (
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos2, Some knight);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos2, Some bishop);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some rook);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos2, Some queen);
         index := Stdlib.( + ) !index 1)
       else if newPos3 land opp_occ <> zero then (
-        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, None);
-        index := Stdlib.( + ) !index 1)
-      else ()
-    else if newPos2 land opp_occ <> zero then (
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some knight);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some bishop);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some rook);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos2, Some queen);
-      index := Stdlib.( + ) !index 1)
-    else if newPos3 land opp_occ <> zero then (
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some knight);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some bishop);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some rook);
-      index := Stdlib.( + ) !index 1;
-      Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some queen);
-      index := Stdlib.( + ) !index 1))
-  else ();
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos3, Some knight);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos3, Some bishop);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index ((rank, file), bit_to_tuple newPos3, Some rook);
+        index := Stdlib.( + ) !index 1;
+        Base.Array.set ans !index
+          ((rank, file), bit_to_tuple newPos3, Some queen);
+        index := Stdlib.( + ) !index 1))
+    else ());
   !index
 
 let legal_moves_knight board (rank, file) list index =
