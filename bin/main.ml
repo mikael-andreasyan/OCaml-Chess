@@ -174,6 +174,11 @@ let draw_moves_for (file, rank) start_x length =
   in
   List.iter (fun (_, ed, _) -> draw_move ed start_x length) moves_for_piece
 
+let draw_selected start_x length (file, rank) =
+  set_color select;
+  fill_rect ((file * length) + start_x) (rank * length) length length;
+  draw_piece_at (file, rank) start_x length
+
 (**[move_piece status] checks if the location where the user pressed to select a
    piece was valid. Then, it'll make the piece follow the cursor of the player
    until they select the place they want to put their piece.*)
@@ -185,13 +190,10 @@ let rec move_piece status length start_x =
     status.mouse_x < start_x
     || status.mouse_x > start_x + (length * 8)
     || Board.get_piece board (piece_x_start, piece_y_start) = None
+    || Board.playerLose board
   then ()
   else (
-    set_color select;
-    fill_rect
-      ((piece_x_start * length) + start_x)
-      (piece_y_start * length) length length;
-    draw_piece_at (piece_x_start, piece_y_start) start_x length;
+    draw_selected start_x length (piece_x_start, piece_y_start);
     draw_moves_for (piece_x_start, piece_y_start) start_x length;
     let status_new = wait_next_event [ Button_down ] in
     let piece_end_x = (status_new.mouse_x - start_x) / length in
@@ -210,24 +212,27 @@ let rec move_piece status length start_x =
       else
         Board.make_move board
           ((piece_x_start, piece_y_start), (piece_end_x, piece_end_y), None)
-    then ()
-    else draw_board start_x length;
-    move_piece status_new length start_x)
+    then (
+      draw_board start_x length;
+      draw_selected start_x length (piece_end_x, piece_end_y))
+    else (
+      draw_board start_x length;
+      move_piece status_new length start_x))
 
 let () =
   open_graph "";
   set_window_title "Le Critters' Bloody Chess";
   resize_window 1280 720;
+  set_color black;
+  fill_rect 0 0 (size_x ()) (size_y ());
+  draw_board ((size_x () - size_y ()) / 2) (size_y () / 8);
   while true do
-    let status = wait_next_event [ Button_down; Button_up ] in
+    let status = wait_next_event [ Button_down ] in
     let y = size_y () in
     let x = size_x () in
     let tile_length = y / 8 in
     set_color black;
     fill_rect 0 0 x y;
     let location_x = (x - y) / 2 in
-    draw_board location_x tile_length;
-    if Board.playerLose board then ()
-    else if button_down () then move_piece status tile_length location_x
-    else ()
+    move_piece status tile_length location_x
   done
