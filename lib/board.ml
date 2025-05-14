@@ -981,6 +981,10 @@ let unmake_move board =
       board.turn <- board.turn lxor 1
   | _ -> ()
 
+[@@@coverage off]
+
+(*this is a function that was used early on in debugging, and as such does not
+  need to be tested in our test.ml*)
 let printerBoard board =
   let boardString = ref "" in
   for file = 7 downto 0 do
@@ -997,6 +1001,8 @@ let printerBoard board =
   done;
   Stdlib.print_string !boardString;
   Stdlib.print_string (Int64.to_string board.enPassant ^ "\n")
+
+[@@@coverage on]
 
 let printerMoveList (movelist : move Base.Array.t) =
   let finalString = ref "" in

@@ -1,7 +1,7 @@
 let pieceValuesMid = [| 82; 337; 365; 477; 1025; 5000 |]
 let pieceValuesEnd = [| 94; 281; 297; 512; 936; 5000 |]
 let gamephaseInc = [| 0; 1; 1; 2; 4; 0 |]
-let depth = 2
+let depth = 4
 let bishopPair = 48
 let knightPair = 16
 let rookPair = 24

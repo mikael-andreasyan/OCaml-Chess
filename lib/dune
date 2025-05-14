@@ -1,3 +1,5 @@
 (library
  (name chess)
- (libraries base))
+ (libraries base)
+ (instrumentation
+  (backend bisect_ppx)))

@@ -1,0 +1,11 @@
+start_file, start_rank, end_file, end_rank, piece_promotion
+3,7,2,6,n
+3,7,1,5,n
+3,7,0,4,n
+4,6,4,7,n
+4,6,4,5,n
+4,6,3,6,n
+4,6,5,6,n
+4,6,3,5,n
+4,6,5,5,n
+4,6,5,7,n

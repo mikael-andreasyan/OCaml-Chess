@@ -9,6 +9,5 @@ val depth : int
    chess engine explores.*)
 
 val get_move : Board.t -> Board.move
-(**[get_move board color] is a tuple of 2 pairs of ints that hold the starting
-   posistion of the piece that we want to move and the ending posistion we want
-   to move the piece to.*)
+(**[get_move board] gives back a move that the engine wants to do next. It
+   assumes that the engine is the current player playing on the board*)

@@ -13,11 +13,12 @@ let move_color = 0xadafb9
 let board =
   Board.make_board2 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-(**a collection of functions that draw the pieces as representations of basic
+(**A collection of functions that draw the pieces as representations of basic
    shapes. All follow the same format of [draw_piece offset length (f,r) color],
    where the [offset] is how far the board is drawn from the corner of the
-   screen, [length] is the length of each tile, [f,r] is the file and rank of
-   the piece and [color] is the color of the piece*)
+   screen on the x axis, [length] is the length of each tile, and [f,r] is the
+   file and rank of the piece and [color] is the color which we want to draw the
+   piece in*)
 
 let draw_pawn offset_x length (f, r) color =
   set_color color;
@@ -112,9 +113,8 @@ let draw_king offset_x length (f, r) color =
   in
   fill_poly points_array
 
-(**an array that has the appropriate index matching to the piece type. The index
-   is based on the number that the piece is associated with in the get piece
-   function*)
+(*An array of the various draw functions, with the indeces being such that they
+  match the numbers outputted by board's get_piece function*)
 let draw_key =
   [|
     (fun _ _ _ _ -> ());
@@ -126,8 +126,8 @@ let draw_key =
     draw_king;
   |]
 
-(**[draw_piece_at (rank, file) offset_x length] draws the piece found at
-   [rank,file] of the board unto the screen. [offset_x] is how much the board
+(**[draw_piece_at (file, rank) offset_x length] draws the piece found at
+   [file,rank] of the board unto the screen. [offset_x] is how much the board
    drawing is offset from the edge of the screen and [length] is the size of
    each tile*)
 let draw_piece_at (file, rank) offset_x length =
@@ -138,7 +138,8 @@ let draw_piece_at (file, rank) offset_x length =
       draw_key.(piece_num) offset_x length (file, rank) color
   | None -> ()
 
-(**swaps the current color to the other color*)
+(**[swap_color color] swaps between the [light] and [dark] color for drawing
+   squares*)
 let swap_color color = if color = light then dark else light
 
 (**[draw_board location_x length] draws the board with the squares and pieces,
@@ -156,7 +157,8 @@ let draw_board location_x length =
   done
 
 (**[draw_move (file,rank) start_x length] draws a little circle that is supposed
-   to indicate a move at (file,rank)*)
+   to indicate a move at [(file,rank)] [start_x] and [length] have the same
+   meaning that they do in other draw functions*)
 let draw_move (file, rank) start_x length =
   fill_circle
     (start_x + (file * length) + (length / 2))
@@ -164,7 +166,9 @@ let draw_move (file, rank) start_x length =
     (length / 8)
 
 (**[draw_moves_for (file,rank) start_x length] draws all the possible moves for
-   the piece at [file,rank] by drawing little black cirlces for valid moves.*)
+   the piece at [file,rank] by drawing little black cirlces for valid
+   moves.[start_x] and [length] have the same meaning that they do in other draw
+   functions*)
 let draw_moves_for (file, rank) start_x length =
   set_color move_color;
   let moves_for_piece =
@@ -179,9 +183,9 @@ let draw_selected start_x length (file, rank) =
   fill_rect ((file * length) + start_x) (rank * length) length length;
   draw_piece_at (file, rank) start_x length
 
-(**[move_piece status] checks if the location where the user pressed to select a
-   piece was valid. Then, it'll make the piece follow the cursor of the player
-   until they select the place they want to put their piece.*)
+(**[move_piece status length start_x] allows the player to play out their turn,
+   recursively calling itself until the user selects a valid move. [start_x] and
+   [length] have the same meaning that they do in other draw functions*)
 let rec move_piece status length start_x =
   draw_board start_x length;
   let piece_x_start = (status.mouse_x - start_x) / length in
@@ -257,7 +261,7 @@ let print_usage () =
   print_endline
     "Usage: if you want to play against the AI, use the string white or the \
      string black as argument to this program. If you want to play a hotseat \
-     game with a friend, just launch the exe"
+     game with a friend, just launch without any arguments"
 
 let () =
   if Array.length Sys.argv = 1 then start_gui false false

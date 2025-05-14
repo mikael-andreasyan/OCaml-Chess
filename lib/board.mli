@@ -4,7 +4,10 @@ type t
    regarding castling, enpassant, etc.*)
 
 type move = (int * int) * (int * int) * int option
-(**Type representation for a move. *)
+(**Type representation for a move. First tuple is starting location and second
+   is ending location, represented by [file,rank]. file is represented by the
+   numbers 0-7 and so is rank. The int option is if there is any promotion data
+   carried with the function*)
 
 (*Some useful constants*)
 val pawn : int
@@ -31,7 +34,7 @@ val make_board1 : int64 array array -> int -> int -> int64 -> t
 val make_board2 : string -> t
 (**[make_board2 fen] is a new board with the given fen string.
 
-   Requires: fen must be a valid fen string.*)
+   Requires: [fen] must be a valid fen string.*)
 
 val legal_moves : t -> move Base.Array.t
 (**[legal_moves board] is a list of all legal moves that can be done by a given
@@ -41,24 +44,20 @@ val legal_moves_pawn : t -> int * int -> move Base.Array.t -> int -> int
 val legal_moves_knight : t -> int * int -> move Base.Array.t -> int -> int
 
 val make_move : t -> move -> bool
-(**[make_move board ((rank1, file1), (rank2, file2))] attempts to move the piece
-   at [rank1, rank_st] to [rank2, file2]. If the movement is illegal, then the
-   function returns false and makes no changes to the board. Otherwise, it
-   mutates the current board to represent the move, changes board state, and
-   advances the turn. Requires: [rank1, file1] and [rank2, file2] are valid
-   positions on a chess board. For this function, the numbers 0-7 represent the
-   letters a-h. Returns: a tuple with the first entry as the board (unchanged if
-   move was invalid) and a boolean that says if the move was invalid*)
+(**[make_move board move] attempts to make the move [move]. If the movement is
+   illegal, then the function returns false and makes no changes to the board.
+   Otherwise, it mutates the current board to represent the move, changes board
+   state, and advances the turn. Requires: [rank1, file1] and [rank2, file2] are
+   valid positions on a chess board. For this function, the numbers 0-7
+   represent the letters a-h. Returns: a tuple with the first entry as the board
+   (unchanged if move was invalid) and a boolean that says if the move was
+   invalid*)
 
 val unmake_move : t -> unit
-(**[make_move board ((rank1, file1), (rank2, file2))] attempts to unmake a move.
-   Requires: [rank1, file1] and [rank2, file2] are valid positions on a chess
-   board. For this function, the numbers 0-7 represent the letters a-h. Returns:
-   a tuple with the first entry as the board (unchanged if move was invalid) and
-   a boolean that says if the move was invalid*)
+(**[make_move board] attempts to unmake the most recent move done to the board.*)
 
 val get_piece : t -> int * int -> int option
-(**[get_piece board (rank, file)] gives the piece at the selected rank and file.
+(**[get_piece board (file, rank)] gives the piece at the selected rank and file.
    It outputs an int where the 4th bit represents the color and the 1st to 3rd
    bit represent the piece type.
 
