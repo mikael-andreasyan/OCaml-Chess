@@ -34,6 +34,8 @@ FOR BOTH SYSTEMS, TO CHECK IF INSTALLATION WORKED
 Whenever you run our chess app on a fresh terminal window, you will need to run
 "export DISPLAY=:0"
 
+IF YOU RUN INTO ANY ERRORS ALONG THE WAY, PLEASE REACH OUT TO ma2384@cornell.edu
+
 Okay now that all the complicated installation is out of the way, here is how you run the app:
 
 "dune exec bin/main.exe" -> this option launches the game in hotseat mode, where you can play against a friend on the same computer

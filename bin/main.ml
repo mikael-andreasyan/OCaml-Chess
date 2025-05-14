@@ -254,7 +254,7 @@ let start_gui ai first =
       let move = Engine.get_move board in
       let _ = Board.make_move board move in
       draw_board location_x tile_length
-    else print_endline "black didn't move"
+    else ()
   done
 
 let print_usage () =
